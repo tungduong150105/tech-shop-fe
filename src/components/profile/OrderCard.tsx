@@ -60,7 +60,7 @@ const OrderCard = ({ order, onClick }: OrderDetail) => {
               onClick={onClick}
               className="text-blue-600 hover:text-blue-700 flex items-center text-sm font-light"
             >
-              {/*Order Status*/}
+              Order Status
             </button>
           )}
         </div>
