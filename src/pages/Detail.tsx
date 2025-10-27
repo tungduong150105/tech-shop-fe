@@ -31,7 +31,7 @@ const Product = {
   ]
 }
 
-const Home = () => {
+const Detail = () => {
   return (
     <div>
       <ProductDetail Product={Product} />
@@ -39,4 +39,4 @@ const Home = () => {
   )
 }
 
-export default Home
+export default Detail

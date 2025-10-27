@@ -45,7 +45,7 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="container mx-auto flex items-center justify-between px-3 py-4">
+      <nav className="container mx-auto flex items-center justify-between px-3 py-4 bg-white">
         <div>
           <Link to="/">
             <img src={Logo} alt="Logo" className="h-8 w-auto" />

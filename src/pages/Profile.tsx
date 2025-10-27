@@ -1,4 +1,3 @@
-// @ts-ignore
 import React from 'react'
 
 // @ts-ignore
@@ -12,10 +11,10 @@ import SecurityIcon from '../assets/security-icon.svg'
 // @ts-ignore
 import LogoutIcon from '../assets/logout-icon.svg'
 
-import ProfileContent from '../components/profile/Profile'
 import Order from '../components/profile/Order'
 import Wishlist from '../components/profile/Wishlist'
 import Security from '../components/profile/Security'
+import ProfileContent from '../components/profile/Profile'
 
 // ========= Types =========
 export type ProfileTabKey =
