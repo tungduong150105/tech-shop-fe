@@ -1,17 +1,5 @@
 import { useState } from 'react'
-
-interface ProductItem {
-  id: string
-  name: string
-  image: string
-  price: number
-  rating: number
-  colors: string[]
-}
-
-interface ProductListProps {
-  products: ProductItem[]
-}
+import { useSimilarProduct } from '../../hooks/useNewProducts'
 
 const StarIcon = () => (
   <svg
@@ -23,17 +11,21 @@ const StarIcon = () => (
   </svg>
 )
 
-const ProductList = ({ products }: ProductListProps) => {
+const ProductSimilar = (categoryId: number) => {
+  const { data: product, isLoading, error } = useSimilarProduct(categoryId);
+  
+  const listProducts = product?.products || [];
+
   const [currentIndex, setCurrentIndex] = useState(0)
   const next = () => {
-    if (currentIndex < products.length - 4) setCurrentIndex(currentIndex + 1)
+    if (currentIndex < listProducts.length - 4) setCurrentIndex(currentIndex + 1)
   }
 
   const prev = () => {
     if (currentIndex > 0) setCurrentIndex(currentIndex - 1)
   }
 
-  function onClickProduct(id: string) {
+  function onClickProduct(id: number) {
     console.log('Product clicked:', id)
   }
 
@@ -57,7 +49,7 @@ const ProductList = ({ products }: ProductListProps) => {
             className="flex transition-transform duration-300 gap-5"
             style={{ transform: `translateX(-${currentIndex * 260}px)` }}
           >
-            {products.map(p => (
+            {listProducts.map(p => (
               <div
                 key={p.id}
                 className="min-w-[250px] bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition p-3"
@@ -65,22 +57,22 @@ const ProductList = ({ products }: ProductListProps) => {
               >
                 <div className="inline-flex">
                   <img
-                    src={p.image}
+                    src={p.img[0]}
                     alt={p.name}
                     className="w-full h-40 object-contain mb-3"
                   />
 
                   {/* Product colors */}
-                  {p.colors.length > 0 && (
+                  {p.color.length > 0 && (
                     <div className="flex flex-col items-center gap-2 mb-3 justify-center">
-                      {p.colors.slice(0, 3).map((color, i) => (
+                      {p.color.slice(0, 3).map((color, i) => (
                         <span
                           key={i}
                           className="h-4 w-4 rounded-full border border-gray-300"
-                          style={{ backgroundColor: color }}
+                          style={{ backgroundColor: color.code }}
                         />
                       ))}
-                      {p.colors.length > 3 && (
+                      {p.color.length > 3 && (
                         <span className="text-gray-500 text-sm">+</span>
                       )}
                     </div>
@@ -105,7 +97,7 @@ const ProductList = ({ products }: ProductListProps) => {
 
         <button
           onClick={next}
-          disabled={currentIndex >= products.length - 4}
+          disabled={currentIndex >= listProducts.length - 4}
           className={`absolute right-0 z-10 p-2 rounded-full bg-gray-100 shadow-md hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed`}
         >
           ›
@@ -114,4 +106,4 @@ const ProductList = ({ products }: ProductListProps) => {
     </div>
   )
 }
-export default ProductList
+export default ProductSimilar

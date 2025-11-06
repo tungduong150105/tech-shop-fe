@@ -21,24 +21,24 @@ const SidebarFilters = ({ filters, onFilterChange, onClearAll }) => {
         onChange={(value) => onFilterChange('brand', value)}
       />
 
-      <div className="mb-6">
-        <button className="flex items-center justify-between w-full mb-3">
-          <span className="font-medium">Color</span>
-          <ChevronDown className="w-4 h-4" />
-        </button>
-      </div>
+      {/* <div className="mb-6"> */}
+      {/*   <button className="flex items-center justify-between w-full mb-3"> */}
+      {/*     <span className="font-medium">Color</span> */}
+      {/*     <ChevronDown className="w-4 h-4" /> */}
+      {/*   </button> */}
+      {/* </div> */}
 
-      <ToggleFilter 
-        label="Discount" 
-        checked={filters.discount}
-        onChange={() => onFilterChange('discount', !filters.discount)}
-      />
-
-      <PriceRangeFilter 
-        min={filters.priceMin}
-        max={filters.priceMax}
-        onChange={(min, max) => onFilterChange('price', { min, max })}
-      />
+      {/* <ToggleFilter  */}
+      {/*   label="Discount"  */}
+      {/*   checked={filters.discount} */}
+      {/*   onChange={() => onFilterChange('discount', !filters.discount)} */}
+      {/* /> */}
+      {/**/}
+      {/* <PriceRangeFilter  */}
+      {/*   min={filters.priceMin} */}
+      {/*   max={filters.priceMax} */}
+      {/*   onChange={(min, max) => onFilterChange('price', { min, max })} */}
+      {/* /> */}
 
       <CheckboxFilter 
         label="RAM" 

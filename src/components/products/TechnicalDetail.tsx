@@ -10,16 +10,17 @@ interface TechnicalDetailProps {
 }
 
 const TechnicalDetail = ({ specs }: TechnicalDetailProps) => {
+  console.log("specs detail", specs)
   const [expanded, setExpanded] = useState(false)
   const visibleCount = expanded ? specs.length : 5
   return (
     <div className="w-full min-w-[500px] rounded-2xl bg-white p-5 sm:p-6 border-gray-100">
-      <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">
+      <h2 className="text-xl sm:text-3xl font-semibold text-gray-900 mb-4">
         Technical Details
       </h2>
 
       <dl className="divide-y divide-gray-100">
-        {specs.slice(0, visibleCount).map((item, i) => (
+        {specs?.slice(0, visibleCount).map((item, i) => (
           <div
             key={i}
             className={`flex justify-between py-3 px-3 ${
@@ -32,7 +33,7 @@ const TechnicalDetail = ({ specs }: TechnicalDetailProps) => {
         ))}
       </dl>
 
-      {specs.length > 5 && (
+      {specs?.length > 5 && (
         <button
           className="mt-4 text-blue-600 hover:underline text-sm font-medium flex items-center gap-1"
           onClick={() => setExpanded(!expanded)}

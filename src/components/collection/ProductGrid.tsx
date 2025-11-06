@@ -1,7 +1,11 @@
 import ProductCard from './ProductCard';
-// import BannerCard from './BannerCard';
+import type { Product } from '../../types/product';
 
-const ProductGrid = ({ products }) => {
+interface ProductGridProps {
+  products: Product[];
+}
+
+const ProductGrid = ({ products } : ProductGridProps) => {
   return (
     <div className="grid grid-cols-3 gap-6">
       {products.slice(0, 9).map((product) => (

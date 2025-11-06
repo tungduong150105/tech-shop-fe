@@ -4,9 +4,9 @@ import { toast } from 'sonner'
 interface ProductProps {
   discount: number
   price: number
-  color?: string
-  id?: number
-  quantity?: number
+  color: string
+  id: number
+  quantity: number
 }
 
 const Payment = ({ discount, price, color, id, quantity }: ProductProps) => {
@@ -28,12 +28,12 @@ const Payment = ({ discount, price, color, id, quantity }: ProductProps) => {
     <div>
       <div className="shadow p-7 rounded-lg flex text-nowrap flex-col max-w-[400px] min-w-[400px]">
         <div className="inline-flex justify-between items-center mb-3">
-          <h2 className="text-2xl">$ {(price * (100 - discount)) / 100}</h2>
+          <h2 className="text-2xl">$ {Number(((price * (100 - discount)) / 100).toFixed(2))}</h2>
           {discount > 0 && <div className="text-orange-600">-{discount}%</div>}
         </div>
         <div className="mb-5">
           {discount > 0 && (
-            <p className="text-gray-700">last price: $ {price}</p>
+            <p className="text-gray-700">last price: $ {Number(price).toFixed(2)}</p>
           )}
         </div>
         <div className="space-y-3">

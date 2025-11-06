@@ -11,65 +11,12 @@ import { useEffect, useState } from 'react'
 import Payment from './Payment'
 import TechnicalDetail from './TechnicalDetail'
 import SimilarProduct from './ProductList'
-import Comment from './Comment'
-import ProductList from './ProductList'
 
-const products = [
-  {
-    id: '1',
-    name: 'Apple 2022 MacBook Pro Laptop with M2 chip 14-inch',
-    image:
-      'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/mbp14-silver-select-202301?wid=400&hei=300',
-    price: 1999.0,
-    rating: 4.7,
-    colors: ['#C0C0C0']
-  },
-  {
-    id: '2',
-    name: 'Apple 2022 MacBook Air Laptop with M2 chip',
-    image:
-      'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/macbook-air-spacegray-select-20220606?wid=400&hei=300',
-    price: 1399.0,
-    rating: 4.5,
-    colors: ['#000000', '#C0C0C0', '#E0E0E0']
-  },
-  {
-    id: '3',
-    name: 'Apple 2023 MacBook Air Laptop with M2 chip 15.3-inch',
-    image:
-      'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/macbook-air-15-gold-select-202306?wid=400&hei=300',
-    price: 1299.0,
-    rating: 4.5,
-    colors: ['#F4E2B8', '#C0C0C0', '#DADADA']
-  },
-  {
-    id: '4',
-    name: 'Apple 2022 MacBook Air Laptop with M2 chip',
-    image:
-      'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/macbook-air-gold-select-20220606?wid=400&hei=300',
-    price: 1099.0,
-    rating: 4.5,
-    colors: ['#E0C29A', '#C0C0C0', '#0A2540', '#FFD1DC']
-  },
-  {
-    id: '4',
-    name: 'Apple 2022 MacBook Air Laptop with M2 chip',
-    image:
-      'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/macbook-air-gold-select-20220606?wid=400&hei=300',
-    price: 1099.0,
-    rating: 4.5,
-    colors: ['#E0C29A', '#C0C0C0', '#0A2540', '#FFD1DC']
-  },
-  {
-    id: '5',
-    name: 'Apple 2022 MacBook Air Laptop with M2 chip',
-    image:
-      'https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/macbook-air-gold-select-20220606?wid=400&hei=300',
-    price: 1099.0,
-    rating: 4.5,
-    colors: ['#E0C29A', '#C0C0C0', '#0A2540', '#FFD1DC']
-  }
-]
+import type { ProductRes, Product } from '../../types/product'
+import { useSimilarProduct } from '../../hooks/useNewProducts'
+import ListProduct from './ListProduct'
+import { useReviewByProduct } from '../../hooks/useProductById'
+import Review from './Review'
 
 const comments: Comment[] = [
   {
@@ -110,58 +57,50 @@ const comments: Comment[] = [
   }
 ]
 
-type ProductType = {
-  _id: number
-  name: string
-  price: number
-  discount: number
-  quantity: number
-  sold: number
-  rating: number
-  img: string[]
-  specs: { label: string; value: string }[]
-  color: { name: string; code: string }[]
-}
-
 interface ProductDetailProps {
-  Product: ProductType
+  product: Product
 }
 
-const ProductDetail = ({ Product }: ProductDetailProps) => {
+const ProductDetail = ({ product }: ProductDetailProps) => {
+  window.scrollTo(0, 0)
   const [selectedInfo, setSelectedInfo] = useState('technical')
   const [mainImage, setMainImage] = useState(
     'https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'
   )
   const [selectedColor, setSelectedColor] = useState('Gray')
   const [expanded, setExpanded] = useState(false)
-  const visibleCount = expanded ? Product.specs.length : 5
+  const visibleCount = expanded ? product.specs.length : 5
+
+  const { data: similarProducts } = useSimilarProduct(product.category_id)
+  const { data: reviewOfProduct, isLoading: reviewLoading } = useReviewByProduct(product.id)
+  console.log('Review of product:', reviewOfProduct)
+
   useEffect(() => {
-    if (Product?.img?.length > 0) {
-      console.log(Product.img)
-      setMainImage(Product.img[0])
+    if (product?.img?.length > 0) {
+      setMainImage(product.img[0])
     }
-    if (Product?.color?.length > 0) {
-      setSelectedColor(Product.color[0].name)
+    if (product?.color?.length > 0) {
+      setSelectedColor(product.color[0].name)
     }
-    console.log(selectedColor)
-  }, [Product])
+  }, [product])
+
   return (
     <div className="p-6">
       <div className="px-10 mx-auto bg-white p-8 rounded-lg">
-        <div className="flex flex-col lg:flex-row justify-center space-x-10 lg:items-start items-center">
+        <div className="flex flex-col xl:flex-row justify-center space-x-10 xl:items-start items-center">
           <div className="md:w-1/2">
             <div className="mb-4">
               <img
                 src={mainImage}
-                alt={Product.name}
+                alt={product.name}
                 className="w-full h-auto object-contain rounded-lg"
               />
             </div>
             <div className="flex space-x-4 mb-4 overflow-auto">
-              {Product.img.map((image, index) => (
+              {product.img.map((image, index) => (
                 <img
                   src={image}
-                  alt={`${Product.name} ${index + 1}`}
+                  alt={`${product.name} ${index + 1}`}
                   key={index}
                   className={`w-20 h-20 object-contain rounded-lg cursor-pointer p-1 ${
                     mainImage === image ? 'border-2 border-blue-600' : 'border'
@@ -171,9 +110,9 @@ const ProductDetail = ({ Product }: ProductDetailProps) => {
               ))}
             </div>
           </div>
-          <div className="md:ml-10">
+          <div className="md:ml-5 min-w-[30%] mb-4">
             <h1 className="text-2xl md:text-3xl font-semibold mb-2">
-              {Product.name}
+              {product.name}
             </h1>
             <div className="flex flex-row items-center gap-5 mb-8">
               <p className="bg-blue-950 px-2 py-1 rounded-lg text-white">
@@ -182,13 +121,13 @@ const ProductDetail = ({ Product }: ProductDetailProps) => {
                   alt="star-icon"
                   className="w-4 h-4 inline mb-1"
                 />{' '}
-                {Product.rating}
+                {product.rating}
               </p>
-              <p className="text-xl text-gray-700">Sold {Product.sold}</p>
+              <p className="text-xl text-gray-700">Sold {product.sold}</p>
             </div>
             <div className="inline-flex items-center mb-2 space-x-4">
               <h2 className="font-light text-xl">Select Color</h2>
-              {Product.color.map(c => (
+              {product.color.map(c => (
                 <button
                   key={c.name}
                   className={`w-8 h-8 rounded-full mr-4 cursor-pointer ${
@@ -199,14 +138,14 @@ const ProductDetail = ({ Product }: ProductDetailProps) => {
                 />
               ))}
             </div>
-            <div className="space-y-5">
+            <div className="space-y-5 text-nowrap">
               <div className="inline-flex items-end">
                 <img
                   src={StockIcon}
                   alt="guarantee-icon"
                   className="w-7 h-7 inline mt-4 mr-2"
                 />
-                {Product.quantity > 0 ? (
+                {product.quantity > 0 ? (
                   <p className="text-green-600 font-medium mt-2">In Stock</p>
                 ) : (
                   <p className="text-red-600 font-medium mt-2">Out of Stock</p>
@@ -231,7 +170,7 @@ const ProductDetail = ({ Product }: ProductDetailProps) => {
             </div>
             <div className="mt-10 ml-10">
               <dl className="grid grid-cols-1 gap-x-8 gap-y-3">
-                {Product.specs.slice(0, visibleCount).map(s => (
+                {product.specs.slice(0, visibleCount).map(s => (
                   <div key={s.label} className="flex items-start gap-3">
                     <span
                       className="mt-2 h-1.5 w-1.5 rounded-full bg-gray-400"
@@ -244,7 +183,7 @@ const ProductDetail = ({ Product }: ProductDetailProps) => {
                   </div>
                 ))}
               </dl>
-              {Product.specs.length > 5 && (
+              {product.specs.length > 5 && (
                 <button
                   className="mt-4 text-blue-600 hover:underline text-sm font-medium flex items-center gap-1"
                   onClick={() => setExpanded(!expanded)}
@@ -263,11 +202,11 @@ const ProductDetail = ({ Product }: ProductDetailProps) => {
             </div>
           </div>
           <Payment
-            discount={Product.discount}
-            price={Product.price}
+            discount={product.discount}
+            price={product.price}
             color={selectedColor}
-            id={Product._id}
-            quantity={Product.quantity}
+            id={product.id}
+            quantity={product.quantity}
           />
         </div>
         <div>
@@ -306,20 +245,30 @@ const ProductDetail = ({ Product }: ProductDetailProps) => {
             </div>
           </nav>
           {selectedInfo === 'technical' && (
-            <TechnicalDetail specs={Product.specs} />
+            <TechnicalDetail specs={product.specs_detail} />
           )}
-          {selectedInfo === 'similar' && <ProductList products={products} />}
-          {selectedInfo === 'comment' && <Comment comments={comments} />}
+          {selectedInfo === 'similar' && (
+            <ListProduct
+              title="Similar Product"
+              products={similarProducts || null}
+            />
+          )}
+          {selectedInfo === 'comment' &&
+            (!reviewLoading && <Review review={reviewOfProduct?.reviews || null} />)
+          }
         </div>
         <div
-          className={`${selectedInfo !== 'similar' ? 'block' : 'hidden'} mt-10`}
+          className={`${selectedInfo !== 'similar' ? 'block' : 'hidden'} mt-10 px-5`}
         >
-          <ProductList products={products} />
+          <ListProduct
+            title="Similar Product"
+            products={similarProducts || null}
+          />
         </div>
         <div
           className={`${selectedInfo !== 'comment' ? 'block' : 'hidden'} mt-10`}
         >
-          <Comment comments={comments} />
+          {!reviewLoading && <Review review={reviewOfProduct?.reviews || null} />}
         </div>
       </div>
     </div>

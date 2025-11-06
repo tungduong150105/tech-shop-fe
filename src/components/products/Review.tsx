@@ -1,21 +1,10 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
-interface Comment {
-  id: string
-  user: string
-  avatar: string
-  date: string
-  rating: number
-  content: string
-  likes: number
-  dislikes: number
-  replies: number
-  likeStatus?: string
-}
+import type { Review } from '../../types/review'
 
-interface CommentsSectionProps {
-  comments: Comment[]
+interface ReviewProps {
+  review: Review[] | null
 }
 
 const StarIcon = () => (
@@ -66,24 +55,25 @@ const DislikeIcon = () => (
   </svg>
 )
 
-const Comment = ({ comments }: CommentsSectionProps) => {
+const Review = ({ review }: ReviewProps) => {
+  console.log('Review data:', review)
   const [expanded, setExpanded] = useState<{ [id: string]: boolean }>({})
   const [isLiked, setIsLiked] = useState<{ [id: string]: string }>({})
   const [likes, setLikes] = useState<{ [id: string]: number }>({})
   const [dislikes, setDislikes] = useState<{ [id: string]: number }>({})
   const [currentUser, setCurrentUser] = useState('none')
 
-  useEffect(() => {
-    for (const comment of comments) {
-      setLikes(prev => ({ ...prev, [comment.id]: comment.likes }))
-      setDislikes(prev => ({ ...prev, [comment.id]: comment.dislikes }))
-      if (currentUser !== 'none') {
-        setIsLiked(prev => ({ ...prev, [comment.id]: comment.likeStatus }))
-      }
-    }
-  }, [comments])
+  // useEffect(() => {
+  //   for (const comment of comments) {
+  //     setLikes(prev => ({ ...prev, [comment.id]: comment.likes }))
+  //     setDislikes(prev => ({ ...prev, [comment.id]: comment.dislikes }))
+  //     if (currentUser !== 'none') {
+  //       setIsLiked(prev => ({ ...prev, [comment.id]: comment.likeStatus }))
+  //     }
+  //   }
+  // }, [comments])
 
-  const toggleExpand = (id: string) => {
+  const toggleExpand = (id: number) => {
     setExpanded(prev => ({ ...prev, [id]: !prev[id] }))
   }
 
@@ -97,45 +87,45 @@ const Comment = ({ comments }: CommentsSectionProps) => {
     }
   }
 
-  function setLike(commentId: string, likes: number, dislikes: number) {
-    if (currentUser !== 'none') {
-      if (isLiked[commentId] === 'like') {
-        setIsLiked(prev => ({ ...prev, [commentId]: 'none' }))
-        setLikes(prev => ({ ...prev, [commentId]: prev[commentId] - 1 }))
-        console.log('Remove Like from comment:', commentId)
-      } else {
-        if (isLiked[commentId] === 'dislike') {
-          console.log('Remove dislike from comment:', commentId)
-          setDislikes(prev => ({ ...prev, [commentId]: prev[commentId] - 1 }))
-        }
-        setLikes(prev => ({ ...prev, [commentId]: prev[commentId] + 1 }))
-        setIsLiked(prev => ({ ...prev, [commentId]: 'like' }))
-        console.log('Add Like to comment:', commentId)
-      }
-    } else {
-      toast.error('Please log in to like comments.')
-    }
-  }
+  // function setLike(commentId: string, likes: number, dislikes: number) {
+  //   if (currentUser !== 'none') {
+  //     if (isLiked[commentId] === 'like') {
+  //       setIsLiked(prev => ({ ...prev, [commentId]: 'none' }))
+  //       setLikes(prev => ({ ...prev, [commentId]: prev[commentId] - 1 }))
+  //       console.log('Remove Like from comment:', commentId)
+  //     } else {
+  //       if (isLiked[commentId] === 'dislike') {
+  //         console.log('Remove dislike from comment:', commentId)
+  //         setDislikes(prev => ({ ...prev, [commentId]: prev[commentId] - 1 }))
+  //       }
+  //       setLikes(prev => ({ ...prev, [commentId]: prev[commentId] + 1 }))
+  //       setIsLiked(prev => ({ ...prev, [commentId]: 'like' }))
+  //       console.log('Add Like to comment:', commentId)
+  //     }
+  //   } else {
+  //     toast.error('Please log in to like comments.')
+  //   }
+  // }
 
-  function setDislike(commentId: string, likes: number, dislikes: number) {
-    if (currentUser !== 'none') {
-      if (isLiked[commentId] === 'dislike') {
-        setIsLiked(prev => ({ ...prev, [commentId]: 'none' }))
-        setDislikes(prev => ({ ...prev, [commentId]: prev[commentId] - 1 }))
-        console.log('Remove dislike from comment:', commentId)
-      } else {
-        if (isLiked[commentId] === 'like') {
-          console.log('Remove Like from comment:', commentId)
-          setLikes(prev => ({ ...prev, [commentId]: prev[commentId] - 1 }))
-        }
-        setDislikes(prev => ({ ...prev, [commentId]: prev[commentId] + 1 }))
-        setIsLiked(prev => ({ ...prev, [commentId]: 'dislike' }))
-        console.log('Add Dislike to comment:', commentId)
-      }
-    } else {
-      toast.error('Please log in to dislike comments.')
-    }
-  }
+  // function setDislike(commentId: string, likes: number, dislikes: number) {
+  //   if (currentUser !== 'none') {
+  //     if (isLiked[commentId] === 'dislike') {
+  //       setIsLiked(prev => ({ ...prev, [commentId]: 'none' }))
+  //       setDislikes(prev => ({ ...prev, [commentId]: prev[commentId] - 1 }))
+  //       console.log('Remove dislike from comment:', commentId)
+  //     } else {
+  //       if (isLiked[commentId] === 'like') {
+  //         console.log('Remove Like from comment:', commentId)
+  //         setLikes(prev => ({ ...prev, [commentId]: prev[commentId] - 1 }))
+  //       }
+  //       setDislikes(prev => ({ ...prev, [commentId]: prev[commentId] + 1 }))
+  //       setIsLiked(prev => ({ ...prev, [commentId]: 'dislike' }))
+  //       console.log('Add Dislike to comment:', commentId)
+  //     }
+  //   } else {
+  //     toast.error('Please log in to dislike comments.')
+  //   }
+  // }
 
   return (
     <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-[300px_1fr] gap-8 p-6">
@@ -165,67 +155,53 @@ const Comment = ({ comments }: CommentsSectionProps) => {
 
       {/* Comments list */}
       <div className="space-y-6">
-        {comments.map(c => {
-          const isExpanded = expanded[c.id]
-          const visibleText = isExpanded
-            ? c.content
-            : c.content.slice(0, 200) + (c.content.length > 200 ? '...' : '')
+        {review?.map(c => {
+            const isExpanded = expanded[c.id]
+            const visibleText = isExpanded
+              ? c.comment
+              : c.comment.slice(0, 200) + (c.comment.length > 200 ? '...' : '')
 
-          return (
-            <div
-              key={c.id}
-              className="border border-gray-200 rounded-xl p-4 bg-white shadow-sm"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <img
-                    src={c.avatar}
-                    alt={c.user}
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                  <div>
-                    <p className="font-medium text-gray-900">{c.user}</p>
-                    <p className="text-xs text-gray-500">{c.date}</p>
+            return (
+              <div
+                key={c.id}
+                className="border border-gray-200 rounded-xl p-4 bg-white shadow-sm"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={
+                        'https://www.google.com/url?sa=i&url=https%3A%2F%2Fpixabay.com%2Fvectors%2Fblank-profile-picture-mystery-man-973460%2F&psig=AOvVaw2ny9wqZ_8SzwBKHALvZYtS&ust=1762421247977000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCOinuvXY2pADFQAAAAAdAAAAABAE'
+                      }
+                      alt={c.user.name}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                    <div>
+                      <p className="font-medium text-gray-900">{c.user.name}</p>
+                      <p className="text-xs text-gray-500">{c.updated_at}</p>
+                    </div>
+                  </div>
+                  <div className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-sm font-medium">
+                    <StarIcon /> {c.rating.toFixed(1)}
                   </div>
                 </div>
-                <div className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-sm font-medium">
-                  <StarIcon /> {c.rating.toFixed(1)}
-                </div>
+
+                <p className="mt-3 text-gray-700 text-sm leading-relaxed whitespace-pre-line">
+                  {visibleText}
+                </p>
+
+                {c.comment.length > 200 && (
+                  <button
+                    onClick={() => toggleExpand(c.id)}
+                    className="mt-1 text-blue-600 hover:underline text-sm font-medium"
+                  >
+                    {isExpanded ? 'Show Less ▲' : 'Show More ▼'}
+                  </button>
+                )}
               </div>
-
-              <p className="mt-3 text-gray-700 text-sm leading-relaxed whitespace-pre-line">
-                {visibleText}
-              </p>
-
-              {c.content.length > 200 && (
-                <button
-                  onClick={() => toggleExpand(c.id)}
-                  className="mt-1 text-blue-600 hover:underline text-sm font-medium"
-                >
-                  {isExpanded ? 'Show Less ▲' : 'Show More ▼'}
-                </button>
-              )}
-
-              <div className="mt-3 flex gap-4 text-sm text-gray-500 justify-end items-center">
-                <div
-                  className="flex items-center gap-1 cursor-pointer hover:text-blue-600 transition"
-                  onClick={() => setLike(c.id, c.likes, c.dislikes)}
-                >
-                  <LikeIcon /> <span>{likes[c.id]}</span>
-                </div>
-                <div className="text-xl text-gray-600"> | </div>
-                <div
-                  className="flex items-center gap-1 cursor-pointer hover:text-blue-600 transition"
-                  onClick={() => setDislike(c.id, c.likes, c.dislikes)}
-                >
-                  <DislikeIcon /> <span>{dislikes[c.id]}</span>
-                </div>
-              </div>
-            </div>
-          )
-        })}
+            )
+          })}
       </div>
     </div>
   )
 }
-export default Comment
+export default Review
