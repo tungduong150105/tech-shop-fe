@@ -6,6 +6,7 @@ export type Product = {
   price: number
   final_price: number
   discount: number
+  discount_percentage?: number
   quantity: number
   sold: number
   rating: number

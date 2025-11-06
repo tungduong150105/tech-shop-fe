@@ -1,7 +1,7 @@
 import Hero from '../components/layout/Hero'
 import Categories from '../components/products/Categories'
 import ListProduct from '../components/products/ListProduct'
-import { useNewProducts, usePopularProducts } from '../hooks/useNewProducts'
+import { useNewProducts, usePopularProducts } from '../hooks/useProducts'
 
 const Home = () => {
   const { data: newProduct } = useNewProducts()

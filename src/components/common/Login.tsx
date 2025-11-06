@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
+import { useLogin, useRegister, useValidateToken } from '../../hooks/useAuth'
+import { useQueryClient } from '@tanstack/react-query'
 
 interface AuthModalProps {
   open: boolean
@@ -15,6 +17,7 @@ interface AuthModalProps {
   onLoginWithGoogle?: () => void
   onLoginWithFacebook?: () => void
   brand?: string
+  onSuccess?: () => void
 }
 
 const MailIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -133,7 +136,8 @@ const Login = ({
   onForgotPassword,
   onLoginWithGoogle,
   onLoginWithFacebook,
-  brand = 'Tech Heim'
+  brand = 'Tech Heim',
+  onSuccess
 }: AuthModalProps) => {
   const [tab, setTab] = useState<'login' | 'register'>('login')
   const [fullName, setFullName] = useState<string>('')
@@ -144,6 +148,11 @@ const Login = ({
   const [agreeCondition, setAgreeCondition] = useState(false)
 
   const dialogRef = useRef<HTMLDivElement>(null)
+  const queryClient = useQueryClient()
+
+  const loginMutation = useLogin()
+  const registerMutation = useRegister()
+  const { refetch: refetchUser } = useValidateToken()
 
   useEffect(() => {
     if (!open) return
@@ -158,17 +167,87 @@ const Login = ({
     return () => document.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
+  // Handle login success
+  useEffect(() => {
+    if (loginMutation.isSuccess) {
+      toast.success('Login successful!')
+      queryClient.invalidateQueries({ queryKey: ['me'] })
+      refetchUser()
+      setEmail('')
+      setPassword('')
+      setRemember(false)
+      onSuccess?.()
+      onClose()
+      loginMutation.reset()
+    }
+  }, [loginMutation.isSuccess, queryClient, refetchUser, onSuccess, onClose])
+
+  // Handle login error
+  useEffect(() => {
+    if (loginMutation.isError) {
+      toast.error(
+        loginMutation.error?.message ||
+          'Login failed. Please check your credentials.'
+      )
+      loginMutation.reset()
+    }
+  }, [loginMutation.isError, loginMutation.error, loginMutation])
+
+  // Handle register success
+  useEffect(() => {
+    if (registerMutation.isSuccess) {
+      toast.success('Registration successful!')
+      queryClient.invalidateQueries({ queryKey: ['me'] })
+      refetchUser()
+      setFullName('')
+      setEmail('')
+      setPassword('')
+      setAgreeCondition(false)
+      onSuccess?.()
+      onClose()
+      registerMutation.reset()
+    }
+  }, [registerMutation.isSuccess, queryClient, refetchUser, onSuccess, onClose])
+
+  // Handle register error
+  useEffect(() => {
+    if (registerMutation.isError) {
+      toast.error(
+        registerMutation.error?.message ||
+          'Registration failed. Please try again.'
+      )
+      registerMutation.reset()
+    }
+  }, [registerMutation.isError, registerMutation.error, registerMutation])
+
   if (!open) return null
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (tab === 'login') onLogin?.(email, password, remember)
-    else {
+    if (tab === 'login') {
+      if (onLogin) {
+        // Use callback if provided (for backward compatibility)
+        onLogin(email, password, remember)
+      } else {
+        // Use hook directly
+        loginMutation.mutate({ email, password })
+      }
+    } else {
       if (!agreeCondition) {
         toast.error('You must agree to the Terms & Conditions')
         return
       }
-      onRegister?.({ fullName, email, password })
+      if (onRegister) {
+        // Use callback if provided (for backward compatibility)
+        onRegister({ fullName, email, password })
+      } else {
+        // Use hook directly
+        registerMutation.mutate({
+          name: fullName,
+          email,
+          password
+        })
+      }
     }
   }
 
@@ -187,13 +266,21 @@ const Login = ({
           {/* Tabs */}
           <div className="flex items-center justify-center pt-5">
             <button
-              className={`pb-2 px-10 text-sm font-light ${tab === 'login' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 border-b-2 border-gray-500'}`}
+              className={`pb-2 px-10 text-sm font-light ${
+                tab === 'login'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-500 border-b-2 border-gray-500'
+              }`}
               onClick={() => setTab('login')}
             >
               Log in
             </button>
             <button
-              className={`pb-2 px-10 text-sm font-light ${tab === 'register' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 border-b-2 border-gray-500'}`}
+              className={`pb-2 px-10 text-sm font-light ${
+                tab === 'register'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-500 border-b-2 border-gray-500'
+              }`}
               onClick={() => setTab('register')}
             >
               Create Account
@@ -309,9 +396,20 @@ const Login = ({
               {/* Primary action */}
               <button
                 type="submit"
-                className="w-full bg-blue-600 text-white rounded-lg py-3 text-sm font-light hover:bg-blue-700 transition"
+                disabled={
+                  tab === 'login'
+                    ? loginMutation.isPending
+                    : registerMutation.isPending
+                }
+                className="w-full bg-blue-600 text-white rounded-lg py-3 text-sm font-light hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {tab === 'login' ? 'Log In' : 'Create Account'}
+                {tab === 'login'
+                  ? loginMutation.isPending
+                    ? 'Logging in...'
+                    : 'Log In'
+                  : registerMutation.isPending
+                  ? 'Creating Account...'
+                  : 'Create Account'}
               </button>
 
               {/* Divider */}

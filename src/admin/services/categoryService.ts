@@ -1,16 +1,11 @@
 import axiosClient from '../../lib/axios'
 import {
   AdminCategory,
-  AdminSubCategory,
   CategoryListResponse,
   CategoryResponse,
   CreateCategoryRequest,
-  CreateSubCategoryRequest,
   DeleteCategoryResponse,
-  SubCategoryListResponse,
-  SubCategoryResponse,
-  UpdateCategoryRequest,
-  UpdateSubCategoryRequest
+  UpdateCategoryRequest
 } from '../types'
 
 export const adminCategoryService = {

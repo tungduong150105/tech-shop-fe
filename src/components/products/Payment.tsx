@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { useAddToCart } from '../../hooks/useCart'
 
 interface ProductProps {
   discount: number
@@ -13,11 +14,29 @@ const Payment = ({ discount, price, color, id, quantity }: ProductProps) => {
   const [paymentType, setPaymentType] = useState('now')
   const installmentOptions = [3, 6, 12, 24]
   const [selectedMonths, setSelectedMonths] = useState<number>(3)
+  const addToCartMutation = useAddToCart()
+
   function AddToCart() {
     console.log(paymentType, selectedMonths, id, color)
     console.log('Add to cart clicked')
     if (quantity > 0) {
-      toast.success('Add to Cart completed successfully!')
+      addToCartMutation.mutate(
+        {
+          productId: id,
+          payload: {
+            color: color,
+            quantity: 1
+          }
+        },
+        {
+          onSuccess: () => {
+            toast.success('Add to Cart completed successfully!')
+          },
+          onError: () => {
+            toast.error('Failed to add to cart')
+          }
+        }
+      )
     }
   }
   function BuyNow() {

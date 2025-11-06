@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 
 import Login from './Login'
 import Search from './Search'
-import StatusModal from './StatusModel'
 
 import CartDrawer from '../layout/CartDrawer'
 
@@ -11,21 +10,19 @@ import CartDrawer from '../layout/CartDrawer'
 import Logo from '../../assets/logo.svg'
 // @ts-ignore
 import ProfileIcon from '../../assets/profile-icon.svg'
-import { useAuth } from '../../hooks/useAuth'
-import { useAuthCheck } from '../../hooks/useAuthCheck'
+import { useValidateToken } from '../../hooks/useAuth'
 import { useCart } from '../../hooks/useCart'
 
 const Navbar = () => {
   const [openAuth, setOpenAuth] = useState(false)
   const [userLoggedIn, setUserLoggedIn] = useState(false)
 
-  const [openStatus, setOpenStatus] = useState(false)
-  const [statusType, setStatusType] = useState<null | 'error' | 'success'>(null)
-  const [statusMessage, setStatusMessage] = useState<string>('')
-  const [statusDescription, setStatusDescription] = useState<string>('')
-
-  const { login, isLoginSuccess, loginError } = useAuth()
-  const { data: user, isLoading, isError } = useAuthCheck()
+  const {
+    data: user,
+    isLoading,
+    isError,
+    refetch: refetchUser
+  } = useValidateToken()
   const isLoggedIn = !isError && !isLoading && !!user
 
   useEffect(() => {
@@ -33,21 +30,10 @@ const Navbar = () => {
     console.log('User logged in status:', isLoggedIn)
   }, [isLoggedIn])
 
-  const onLogin = (email: string, password: string, rememberMe: boolean) => {
-    console.log('Hello')
-    login({ email, password })
+  const handleAuthSuccess = () => {
+    refetchUser()
+    setOpenAuth(false)
   }
-
-  useEffect(() => {
-    if (isLoginSuccess && !userLoggedIn) {
-      setOpenStatus(true)
-      setStatusMessage('Well Done')
-      setStatusDescription('You have successfully logged in.')
-      setOpenAuth(false)
-      setUserLoggedIn(true)
-      setStatusType('success')
-    }
-  }, [isLoginSuccess])
 
   const { data: cartProducts, isLoading: isCartLoading } = useCart()
 
@@ -93,8 +79,10 @@ const Navbar = () => {
         </div>
         <div className="flex items-center space-x-4">
           <Search />
-          {isCartLoading && (<CartDrawer cartProducts={null} />)}
-          {!isCartLoading && (<CartDrawer cartProducts={cartProducts?.cart || null} />)}
+          {isCartLoading && <CartDrawer cartProducts={null} />}
+          {!isCartLoading && (
+            <CartDrawer cartProducts={cartProducts?.cart || null} />
+          )}
           {userLoggedIn ? (
             <Link to="/profile">
               <img src={ProfileIcon} alt="Profile" className="h-15 w-15" />
@@ -112,23 +100,11 @@ const Navbar = () => {
       <Login
         open={openAuth}
         onClose={() => setOpenAuth(false)}
-        onLogin={(e, p, r) => {
-          onLogin(e, p, r)
-        }}
-        onRegister={p => {
-          console.log('register', p)
-        }}
+        onSuccess={handleAuthSuccess}
         onForgotPassword={() => alert('Forgot password clicked')}
         onLoginWithGoogle={() => alert('Google OAuth')}
         onLoginWithFacebook={() => alert('Facebook OAuth')}
         brand="Tech Heim"
-      />
-      <StatusModal
-        open={openStatus}
-        type={statusType}
-        message={statusMessage}
-        description={statusDescription}
-        onClose={() => setOpenStatus(false)}
       />
     </>
   )

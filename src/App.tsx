@@ -22,6 +22,9 @@ import AdminCouponsList from './admin/pages/coupons/List'
 import AdminCouponEdit from './admin/pages/coupons/Edit'
 import AdminCouponCreate from './admin/pages/coupons/Create'
 import AdminCustomersList from './admin/pages/customers/List'
+import AdminFiltersList from './admin/pages/filters/List'
+import AdminFilterCreate from './admin/pages/filters/Create'
+import AdminFilterEdit from './admin/pages/filters/Edit'
 import Cart from './pages/Cart'
 
 const queryClient = new QueryClient()
@@ -58,6 +61,11 @@ function App() {
               <Route index element={<AdminCategoriesList />} />
               <Route path="new" element={<AdminCategoryCreate />} />
               <Route path=":id" element={<AdminCategoryEdit />} />
+            </Route>
+            <Route path="filters">
+              <Route index element={<AdminFiltersList />} />
+              <Route path="new" element={<AdminFilterCreate />} />
+              <Route path=":id" element={<AdminFilterEdit />} />
             </Route>
             <Route path="orders">
               <Route index element={<AdminOrdersList />} />

@@ -1,18 +1,22 @@
 export type AuthReq = {
-  "email": string,
-  "password": string,
+  email: string
+  password: string
+}
+
+export type AuthUser = {
+  id: string
+  name: string
+  email: string
+  role: string
+  phone: string | null
+  address: string | null
 }
 
 export type AuthRes = {
-  "success": boolean,
-  "message": string,
-  user: {
-    "id": number,
-    "name": string,
-    "email": string,
-    "role": string,
-    "phone": string | null,
-    "address": string | null,
-  },
-  "token": string,
+  success: boolean
+  message: string
+  data: {
+    accessToken: string
+    user: AuthUser
+  }
 }

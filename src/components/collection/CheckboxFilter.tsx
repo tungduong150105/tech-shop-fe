@@ -1,7 +1,14 @@
 import { useState } from 'react'
 import { ChevronUp, ChevronDown } from 'lucide-react'
 
-const CheckboxFilter = ({ label, options, selectedValues, onChange }) => {
+type CheckboxFilterProps = {
+  label: string
+  options: string[]
+  selectedValues: string[]
+  onChange: (value: string) => void
+}
+
+const CheckboxFilter = ({ label, options, selectedValues, onChange }: CheckboxFilterProps) => {
   const [expanded, setExpanded] = useState(true);
 
   return (
@@ -19,12 +26,11 @@ const CheckboxFilter = ({ label, options, selectedValues, onChange }) => {
             <label key={idx} className="flex items-center gap-2 cursor-pointer">
               <input 
                 type="checkbox" 
-                checked={selectedValues.includes(option.value || option)}
-                onChange={() => onChange(option.value || option)}
+                checked={selectedValues.includes(option)}
+                onChange={() => onChange(option)}
                 className="w-4 h-4 rounded border-gray-300"
               />
-              <span className="text-sm text-gray-700">{option.label || option}</span>
-              {option.count && <span className="text-xs text-gray-400">({option.count})</span>}
+              <span className="text-sm text-gray-700">{option}</span>
             </label>
           ))}
         </div>

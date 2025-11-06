@@ -50,7 +50,7 @@ function Model({
               <div className="flex items-center justify-between gap-2">
                 <div className="flex flex-col">
                   <p className="text-lg font-light">Grand total</p>
-                  <p>$ {totalCost}</p>
+                  <p className="text-lg font-semibold">${typeof totalCost === 'number' ? totalCost.toFixed(2) : '0.00'}</p>
                 </div>
                 <div>
                   <button

@@ -15,7 +15,8 @@ import {
   Shield,
   Settings2,
   ExternalLink,
-  Store
+  Store,
+  Filter
 } from 'lucide-react'
 
 type NavItem = {
@@ -34,7 +35,8 @@ const sections: NavSection[] = [
       { to: '/admin/orders', label: 'Order Management', icon: ShoppingCart },
       { to: '/admin/customers', label: 'Customers', icon: Users },
       { to: '/admin/coupons', label: 'Coupon Code', icon: TicketPercent },
-      { to: '/admin/categories', label: 'Categories', icon: Layers }
+      { to: '/admin/categories', label: 'Categories', icon: Layers },
+      { to: '/admin/filters', label: 'Filter Options', icon: Filter, end: true }
     ]
   },
   {
