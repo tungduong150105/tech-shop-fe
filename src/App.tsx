@@ -6,6 +6,7 @@ import { Toaster } from 'sonner'
 import Detail from './pages/Detail'
 import Profile from './pages/Profile'
 import Collection from './pages/Collection'
+import Cart from './pages/Cart'
 
 const queryClient = new QueryClient()
 
@@ -21,6 +22,7 @@ function App() {
             <Route path="/product/:id" element={<Detail />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/collection/:collection" element={<Collection />} />
+            <Route path="/cart" element={<Cart />} />
           </Route>
           <Route>{/* Admin Layout */}</Route>
         </Routes>

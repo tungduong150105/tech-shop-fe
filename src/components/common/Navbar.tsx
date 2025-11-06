@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 
 import Login from './Login'
@@ -11,10 +11,12 @@ import CartDrawer from '../layout/CartDrawer'
 import Logo from '../../assets/logo.svg'
 // @ts-ignore
 import ProfileIcon from '../../assets/profile-icon.svg'
+import { useAuth } from '../../hooks/useAuth'
+import { useAuthCheck } from '../../hooks/useAuthCheck'
+import { useCart } from '../../hooks/useCart'
 
 const Navbar = () => {
   const [openAuth, setOpenAuth] = useState(false)
-  const [cartItemCount, setCartItemCount] = useState(1)
   const [userLoggedIn, setUserLoggedIn] = useState(false)
 
   const [openStatus, setOpenStatus] = useState(false)
@@ -22,26 +24,32 @@ const Navbar = () => {
   const [statusMessage, setStatusMessage] = useState<string>('')
   const [statusDescription, setStatusDescription] = useState<string>('')
 
-  function onLogin(email: string, password: string, rememberMe: boolean) {
-    // console.log("Logging in with", { email, password, rememberMe });
-    // const res = await fetch('/api/login', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify({ email, password }),
-    // });
-    // if (!res.ok) {
-    //   setStatusType('error');
-    //   return;
-    // }
-    setOpenStatus(true)
-    setStatusMessage('Well Done')
-    setStatusDescription('You have successfully logged in.')
-    setOpenAuth(false)
-    setUserLoggedIn(true)
-    setStatusType('success')
+  const { login, isLoginSuccess, loginError } = useAuth()
+  const { data: user, isLoading, isError } = useAuthCheck()
+  const isLoggedIn = !isError && !isLoading && !!user
+
+  useEffect(() => {
+    setUserLoggedIn(isLoggedIn)
+    console.log('User logged in status:', isLoggedIn)
+  }, [isLoggedIn])
+
+  const onLogin = (email: string, password: string, rememberMe: boolean) => {
+    console.log('Hello')
+    login({ email, password })
   }
+
+  useEffect(() => {
+    if (isLoginSuccess && !userLoggedIn) {
+      setOpenStatus(true)
+      setStatusMessage('Well Done')
+      setStatusDescription('You have successfully logged in.')
+      setOpenAuth(false)
+      setUserLoggedIn(true)
+      setStatusType('success')
+    }
+  }, [isLoginSuccess])
+
+  const { data: cartProducts, isLoading: isCartLoading } = useCart()
 
   return (
     <>
@@ -85,7 +93,8 @@ const Navbar = () => {
         </div>
         <div className="flex items-center space-x-4">
           <Search />
-          <CartDrawer />
+          {isCartLoading && (<CartDrawer cartProducts={null} />)}
+          {!isCartLoading && (<CartDrawer cartProducts={cartProducts?.cart || null} />)}
           {userLoggedIn ? (
             <Link to="/profile">
               <img src={ProfileIcon} alt="Profile" className="h-15 w-15" />

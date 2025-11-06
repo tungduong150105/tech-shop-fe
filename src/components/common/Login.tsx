@@ -1,4 +1,3 @@
-// @ts-ignore
 import React, { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -36,6 +35,7 @@ const MailIcon = (props: React.SVGProps<SVGSVGElement>) => (
     />
   </svg>
 )
+
 const LockIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     width="24"
@@ -58,6 +58,7 @@ const LockIcon = (props: React.SVGProps<SVGSVGElement>) => (
     />
   </svg>
 )
+
 const EyeIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     width="24"
