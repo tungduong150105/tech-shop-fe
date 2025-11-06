@@ -22,6 +22,7 @@ import AdminCouponsList from './admin/pages/coupons/List'
 import AdminCouponEdit from './admin/pages/coupons/Edit'
 import AdminCouponCreate from './admin/pages/coupons/Create'
 import AdminCustomersList from './admin/pages/customers/List'
+import Cart from './pages/Cart'
 
 const queryClient = new QueryClient()
 
@@ -37,6 +38,7 @@ function App() {
             <Route path="/product/:id" element={<Detail />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/collection/:collection" element={<Collection />} />
+            <Route path="/cart" element={<Cart />} />
           </Route>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />

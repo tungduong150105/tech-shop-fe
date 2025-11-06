@@ -26,6 +26,7 @@ export const fetchCollectionProducts = async (
   page: number,
   limit: number
 ): Promise<ListProductRes> => {
+  console.log("Fetching product");
   if (filter.length > 0) {
     filter = '&' + filter
   }
