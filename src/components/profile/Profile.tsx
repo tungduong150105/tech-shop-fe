@@ -1,22 +1,42 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { User, Mail, Phone, Key, Home, MapPin, Edit2, X } from 'lucide-react'
+import { useValidateToken, useUpdateProfile } from '../../hooks/useAuth'
+import { toast } from 'sonner'
 
 type ModalProps = {
   title: string
-  onClose(): void
-  name: string
-  type: string
-  onChange(): void
+  onClose: () => void
+  firstName: string
+  lastName: string
+  onFirstNameChange: (value: string) => void
+  onLastNameChange: (value: string) => void
+  onSubmit: () => void
+  isLoading?: boolean
 }
 
-function Modal({ title, onClose, name, type, onChange }: ModalProps) {
+function Modal({
+  title,
+  onClose,
+  firstName,
+  lastName,
+  onFirstNameChange,
+  onLastNameChange,
+  onSubmit,
+  isLoading = false
+}: ModalProps) {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl"
+        onClick={e => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
           <button
-            onClick={() => setShowModal(false)}
+            onClick={onClose}
             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
           >
             <X className="w-5 h-5 text-gray-500" />
@@ -26,22 +46,36 @@ function Modal({ title, onClose, name, type, onChange }: ModalProps) {
         <div className="space-y-4">
           <div>
             <label className="block text-xs text-blue-600 mb-2 ml-3">
-              {name}
+              First Name
             </label>
             <input
-              type={type}
-              value={name}
-              onChange={e => onChange(e.target.value)}
+              type="text"
+              value={firstName}
+              onChange={e => onFirstNameChange(e.target.value)}
               className="w-full px-4 py-3 border-2 border-blue-500 rounded-xl focus:outline-none focus:border-blue-600"
-              placeholder="Jimmy"
+              placeholder="First name"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs text-blue-600 mb-2 ml-3">
+              Last Name
+            </label>
+            <input
+              type="text"
+              value={lastName}
+              onChange={e => onLastNameChange(e.target.value)}
+              className="w-full px-4 py-3 border-2 border-blue-500 rounded-xl focus:outline-none focus:border-blue-600"
+              placeholder="Last name"
             />
           </div>
 
           <button
-            onClick={handSumbit}
-            className="w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors mt-6"
+            onClick={onSubmit}
+            disabled={isLoading}
+            className="w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            save
+            {isLoading ? 'Saving...' : 'Save'}
           </button>
         </div>
       </div>
@@ -50,20 +84,54 @@ function Modal({ title, onClose, name, type, onChange }: ModalProps) {
 }
 
 export default function Profile() {
+  const { data: userData, isLoading } = useValidateToken()
+  const updateProfile = useUpdateProfile()
+
   const [showModal, setShowModal] = useState(false)
-  const [firstName, setFirstName] = useState('Jimmy')
-  const [lastName, setLastName] = useState('Smith')
-  const [fullName, setFullName] = useState('Jimmy Smith')
-  const [email, setEmail] = useState('Jimmy.smith1996@gmail.com')
-  const [phone, setPhone] = useState('+12345678910')
-  const [address, setAddress] = useState(
-    'HubSpot, 25 First Street, Cambridge...'
-  )
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [address, setAddress] = useState('')
   const [postalCode, setPostalCode] = useState('')
 
-  const handleSaveName = () => {
-    setFullName(`${firstName} ${lastName}`)
-    setShowModal(false)
+  // Initialize from user data
+  useEffect(() => {
+    if (userData?.user) {
+      const nameParts = (userData.user.name || '').split(' ')
+      setFirstName(nameParts[0] || '')
+      setLastName(nameParts.slice(1).join(' ') || '')
+      setFullName(userData.user.name || '')
+      setEmail(userData.user.email || '')
+      setPhone(userData.user.phone || '')
+      setAddress(userData.user.address || '')
+    }
+  }, [userData])
+
+  const handleSaveName = async () => {
+    const newFullName = `${firstName} ${lastName}`.trim()
+    if (!newFullName) {
+      toast.error('Name cannot be empty')
+      return
+    }
+
+    try {
+      await updateProfile.mutateAsync({ name: newFullName })
+      setFullName(newFullName)
+      setShowModal(false)
+      toast.success('Name updated successfully')
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to update name')
+    }
+  }
+
+  if (isLoading) {
+    return <div className="p-8">Loading...</div>
+  }
+
+  if (!userData?.user) {
+    return <div className="p-8">Please log in to view your profile</div>
   }
 
   return (
@@ -190,7 +258,18 @@ export default function Profile() {
       </div>
 
       {/* Modal */}
-      {/* {showModal && <Modal />} */}
+      {showModal && (
+        <Modal
+          title="Edit Full Name"
+          onClose={() => setShowModal(false)}
+          firstName={firstName}
+          lastName={lastName}
+          onFirstNameChange={setFirstName}
+          onLastNameChange={setLastName}
+          onSubmit={handleSaveName}
+          isLoading={updateProfile.isPending}
+        />
+      )}
     </div>
   )
 }

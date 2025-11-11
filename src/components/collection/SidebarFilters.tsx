@@ -1,81 +1,72 @@
-import { ChevronUp, ChevronDown } from 'lucide-react'
-
 import CheckboxFilter from './CheckboxFilter'
-import ToggleFilter from './ToggleFilter'
-import PriceRangeFilter from './PriceRangeFilter'
+import type { DynamicFilters } from '../../pages/Collection'
 
-const SidebarFilters = ({ filters, onFilterChange, onClearAll }) => {
+type SidebarFiltersProps = {
+  filters: DynamicFilters
+  onFilterChange: (filterKey: string, value: string) => void
+  onClearAll: () => void
+  isLoading?: boolean
+}
+
+const SidebarFilters = ({ filters, onFilterChange, onClearAll, isLoading = false }: SidebarFiltersProps) => {
+  // Get all filter keys from options, sorted by key for consistent display
+  const filterKeys = Object.keys(filters.options).sort()
+
+  if (isLoading) {
+    return (
+      <div className="w-64 flex-shrink-0">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-semibold">Filters</h2>
+        </div>
+        <div className="text-sm text-gray-500">Loading filters...</div>
+      </div>
+    )
+  }
+
+  if (filterKeys.length === 0) {
+    return (
+      <div className="w-64 flex-shrink-0">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-semibold">Filters</h2>
+        </div>
+        <div className="text-sm text-gray-500">No filters available</div>
+      </div>
+    )
+  }
+
   return (
     <div className="w-64 flex-shrink-0">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-semibold">Filters</h2>
-        <button onClick={onClearAll} className="text-sm text-blue-600 hover:underline">
+        <button 
+          onClick={onClearAll} 
+          className="text-sm text-blue-600 hover:underline"
+        >
           Clear all
         </button>
       </div>
 
-      <CheckboxFilter 
-        label="Brand" 
-        options={filters.brandOptions}
-        selectedValues={filters.selectedBrands}
-        onChange={(value) => onFilterChange('brand', value)}
-      />
+      {/* Dynamically render filters based on API data */}
+      {filterKeys.map(filterKey => {
+        const filterOption = filters.options[filterKey]
+        const selectedValues = filters.selected[filterKey] || []
 
-      {/* <div className="mb-6"> */}
-      {/*   <button className="flex items-center justify-between w-full mb-3"> */}
-      {/*     <span className="font-medium">Color</span> */}
-      {/*     <ChevronDown className="w-4 h-4" /> */}
-      {/*   </button> */}
-      {/* </div> */}
+        if (!filterOption || !filterOption.options || filterOption.options.length === 0) {
+          return null
+        }
 
-      {/* <ToggleFilter  */}
-      {/*   label="Discount"  */}
-      {/*   checked={filters.discount} */}
-      {/*   onChange={() => onFilterChange('discount', !filters.discount)} */}
-      {/* /> */}
-      {/**/}
-      {/* <PriceRangeFilter  */}
-      {/*   min={filters.priceMin} */}
-      {/*   max={filters.priceMax} */}
-      {/*   onChange={(min, max) => onFilterChange('price', { min, max })} */}
-      {/* /> */}
-
-      <CheckboxFilter 
-        label="RAM" 
-        options={filters.ramOptions}
-        selectedValues={filters.selectedRam}
-        onChange={(value : string) => onFilterChange('ram', value)}
-      />
-
-      <CheckboxFilter 
-        label="Screen Size" 
-        options={filters.screenSizeOptions}
-        selectedValues={filters.selectedScreenSize}
-        onChange={(value) => onFilterChange('screenSize', value)}
-      />
-
-      <CheckboxFilter 
-        label="Processor" 
-        options={filters.processorOptions}
-        selectedValues={filters.selectedProcessor}
-        onChange={(value) => onFilterChange('processor', value)}
-      />
-
-      <CheckboxFilter 
-        label="GPU Brand" 
-        options={filters.gpuBrandOptions}
-        selectedValues={filters.selectedGpuBrand}
-        onChange={(value) => onFilterChange('gpuBrand', value)}
-      />
-
-      <CheckboxFilter 
-        label="Drive Size" 
-        options={filters.driveSizeOptions}
-        selectedValues={filters.selectedDriveSize}
-        onChange={(value) => onFilterChange('driveSize', value)}
-      />
+        return (
+          <CheckboxFilter
+            key={filterKey}
+            label={filterOption.label}
+            options={filterOption.options}
+            selectedValues={selectedValues}
+            onChange={(value: string) => onFilterChange(filterKey, value)}
+          />
+        )
+      })}
     </div>
-  );
-};
+  )
+}
 
 export default SidebarFilters

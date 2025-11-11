@@ -1,25 +1,59 @@
-import { useAuthStatus } from './useAuthStatus'
-import { useLogin } from './useLogin'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  login as loginSvc,
+  register as registerSvc,
+  logout as logoutSvc,
+  validateToken as meSvc,
+  updateProfile as updateProfileSvc,
+  changePassword as changePasswordSvc,
+  type RegisterReq
+} from '../services/authService'
+import type { AuthReq, AuthRes, AuthUser } from '../types/auth'
 
-export const useAuth = () => {
-  const loginMutation = useLogin()
-  const authStatus = useAuthStatus()
+export const useLogin = () =>
+  useMutation<AuthRes, Error, AuthReq>({
+    mutationFn: payload => loginSvc(payload)
+  })
 
-  return {
-    login: loginMutation.mutate,
-    logininAsync: loginMutation.mutateAsync,
+export const useRegister = () =>
+  useMutation<any, Error, RegisterReq>({
+    mutationFn: payload => registerSvc(payload)
+  })
 
-    isLoggingIn: loginMutation.isPending,
-    isLoading: authStatus.isLoading,
+export const useValidateToken = () => {
+  const hasToken = !!localStorage.getItem('accessToken')
 
-    user: authStatus.data?.user,
-    isAuthenticated: !!authStatus.data && !authStatus.error,
-
-    authError: authStatus.error,
-    loginError: loginMutation.error,
-
-    isLoginSuccess: loginMutation.isSuccess,
-
-    loginData: loginMutation.data,
-  }
+  return useQuery<{ user: AuthUser }, Error>({
+    queryKey: ['me'],
+    queryFn: meSvc,
+    enabled: hasToken, // Only fetch if token exists
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false
+  })
 }
+
+export const useLogout = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => logoutSvc(),
+    onSuccess: () => {
+      qc.removeQueries({ queryKey: ['me'] })
+    }
+  })
+}
+
+export const useUpdateProfile = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: updateProfileSvc,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['me'] })
+    }
+  })
+}
+
+export const useChangePassword = () =>
+  useMutation({ mutationFn: changePasswordSvc })

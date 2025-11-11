@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useSimilarProduct } from '../../hooks/useNewProducts'
+import { useSimilarProducts } from '../../hooks/useProducts'
 
 const StarIcon = () => (
   <svg
@@ -12,7 +12,7 @@ const StarIcon = () => (
 )
 
 const ProductSimilar = (categoryId: number) => {
-  const { data: product, isLoading, error } = useSimilarProduct(categoryId);
+  const { data: product, isLoading, error } = useSimilarProducts(categoryId);
   
   const listProducts = product?.products || [];
 

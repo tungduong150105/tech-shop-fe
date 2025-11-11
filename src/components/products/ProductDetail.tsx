@@ -13,9 +13,8 @@ import TechnicalDetail from './TechnicalDetail'
 import SimilarProduct from './ProductList'
 
 import type { ProductRes, Product } from '../../types/product'
-import { useSimilarProduct } from '../../hooks/useNewProducts'
+import { useSimilarProducts, useProductReviews } from '../../hooks/useProducts'
 import ListProduct from './ListProduct'
-import { useReviewByProduct } from '../../hooks/useProductById'
 import Review from './Review'
 
 const comments: Comment[] = [
@@ -71,8 +70,8 @@ const ProductDetail = ({ product }: ProductDetailProps) => {
   const [expanded, setExpanded] = useState(false)
   const visibleCount = expanded ? product.specs.length : 5
 
-  const { data: similarProducts } = useSimilarProduct(product.category_id)
-  const { data: reviewOfProduct, isLoading: reviewLoading } = useReviewByProduct(product.id)
+  const { data: similarProducts } = useSimilarProducts(Number(product.category_id))
+  const { data: reviewOfProduct, isLoading: reviewLoading } = useProductReviews(Number(product.id))
   console.log('Review of product:', reviewOfProduct)
 
   useEffect(() => {

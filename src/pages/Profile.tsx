@@ -15,6 +15,7 @@ import Order from '../components/profile/Order'
 import Wishlist from '../components/profile/Wishlist'
 import Security from '../components/profile/Security'
 import ProfileContent from '../components/profile/Profile'
+import { useValidateToken } from '../hooks/useAuth'
 
 // ========= Types =========
 export type ProfileTabKey =
@@ -58,10 +59,12 @@ type User = {
 
 export default function Profile() {
   const [tabActive, setTabActive] = React.useState<ProfileTabKey>('profile')
-
+  
+  const { data: userData, isLoading } = useValidateToken()
+  
   const USER: User = {
-    name: 'John Doe',
-    email: 'abc',
+    name: userData?.user?.name || 'Guest',
+    email: userData?.user?.email || '',
     avatarUrl:
       'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_640.png'
   }

@@ -1,11 +1,21 @@
-import type { Categories } from '../types/category';
-
-const API_BASE_URL = 'http://localhost:3000/api/v1/categories';
+import axiosClient from '../lib/axios'
+import type { Categories } from '../types/category'
 
 export const fetchCategories = async (): Promise<Categories> => {
-  const response = await fetch(API_BASE_URL);
-  if (!response.ok) {
-    throw new Error('Failed to fetch categories');
-  }
-  return response.json();
+  const { data } = await axiosClient.get<Categories>('/categories')
+  return data
+}
+
+export const fetchCategoryById = async (id: number): Promise<any> => {
+  const { data } = await axiosClient.get(`/categories/${id}`)
+  return data
+}
+
+export const fetchSubCategoriesByCategory = async (
+  categoryId: number
+): Promise<any> => {
+  const { data } = await axiosClient.get(
+    `/categories/${categoryId}/sub-categories`
+  )
+  return data
 }

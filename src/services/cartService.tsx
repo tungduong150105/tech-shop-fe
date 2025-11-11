@@ -1,93 +1,48 @@
-import { Cart } from '../types/cart'
+import axiosClient from '../lib/axios'
+import type { Cart } from '../types/cart'
 
-const API_BASE_URL = 'http://localhost:3000/api/v1/cart'
-
-interface Res {
+interface CartResponse {
   cart: Cart
 }
 
-export const fetchCart = async (): Promise<Res> => {
-  const token = localStorage.getItem('token')
-
-  const response = await fetch(API_BASE_URL, {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  })
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch cart')
+export const fetchCart = async (): Promise<CartResponse> => {
+  const token = localStorage.getItem('accessToken')
+  if (!token) {
+    throw new Error('No access token')
   }
-
-  return response.json()
+  const { data } = await axiosClient.get<CartResponse>('/cart')
+  return data
 }
 
-interface AddToCart {
-  quantity: number
-  color: {
-    name: string
-    code: string
-  }
+export type AddToCartPayload = {
+  quantity?: number
+  color?: string | { name: string; code: string } | null
 }
 
 export const addToCart = async (
   productId: number,
-  color_name: string,
-  color_code: string,
-  quantity: number
+  payload: AddToCartPayload
 ): Promise<any> => {
-  const token = localStorage.getItem('token')
-
-  const requestBody: AddToCart = {
-    quantity: quantity,
-    color: {
-      name: color_name,
-      code: color_code
-    }
-  };
-
-  const response = await fetch(`${API_BASE_URL}/add_item/${productId}`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`
-    },
-    body: JSON.stringify(requestBody)
-  })
-
-  if (!response.ok) {
-    throw new Error('Failed to add product to cart')
-  }
-
-  return response.json()
+  const { data } = await axiosClient.post(`/cart/add_item/${productId}`, payload)
+  return data
 }
 
-export const updateCart = async (
+export const updateCartQuantity = async (
   productId: number,
-  color_name: string,
-  color_code: string,
   quantity: number
 ): Promise<any> => {
-  const token = localStorage.getItem('token')
-
-  const requestBody: AddToCart = {
-    quantity: quantity,
-    color: {
-      name: color_name,
-      code: color_code
-    }
-  };
-
-  const response = await fetch(`${API_BASE_URL}/add_item/${productId}`, {
-    method: 'PUT',
-    headers: {
-      Authorization: `Bearer ${token}`
-    },
-    body: JSON.stringify(requestBody)
+  const { data } = await axiosClient.put(`/cart/update_item/${productId}`, {
+    quantity
   })
+  return data
+}
 
-  if (!response.ok) {
-    throw new Error('Failed to add product to cart')
-  }
+export const removeCartItem = async (productId: number): Promise<any> => {
+  const { data } = await axiosClient.delete(`/cart/remove_item/${productId}`)
+  return data
+}
 
-  return response.json()
+export const clearCart = async (): Promise<any> => {
+  const { data } = await axiosClient.delete('/cart/clear')
+  return data
 }

@@ -1,17 +1,24 @@
-const API_BASE_URL = 'http://localhost:3000/api/v1/filter'
+import axiosClient from '../lib/axios'
 
-export const fetchAllFilter = async (): Promise<any> => {
-  const response = await fetch(API_BASE_URL)
-  if (!response.ok) {
-    throw new Error('Failed to fetch categories')
-  }
-  return response.json()
+interface FilterResponse {
+  success: boolean
+  data: Array<{
+    key: string
+    label: string
+    options: string[]
+  }>
 }
 
-export const fetchFilterByCategory = async (category_id: number): Promise<any> => {
-  const response = await fetch(`${API_BASE_URL}?category_id=${category_id}`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch categories')
-  }
-  return response.json()
+export const fetchAllFilter = async (): Promise<FilterResponse> => {
+  const { data } = await axiosClient.get<FilterResponse>('/filter')
+  return data
+}
+
+export const fetchFilterByCategory = async (
+  category_id: number
+): Promise<FilterResponse> => {
+  const { data } = await axiosClient.get<FilterResponse>('/filter', {
+    params: { category_id }
+  })
+  return data
 }
