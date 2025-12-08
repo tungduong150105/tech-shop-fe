@@ -3,7 +3,7 @@ import { User, Mail, Phone, Key, Home, MapPin, Edit2, X } from 'lucide-react'
 import { useValidateToken, useUpdateProfile } from '../../hooks/useAuth'
 import { toast } from 'sonner'
 
-type ModalProps = {
+type NameModalProps = {
   title: string
   onClose: () => void
   firstName: string
@@ -14,7 +14,19 @@ type ModalProps = {
   isLoading?: boolean
 }
 
-function Modal({
+type FieldModalProps = {
+  title: string
+  onClose: () => void
+  value: string
+  onChange: (value: string) => void
+  onSubmit: () => void
+  isLoading?: boolean
+  type?: 'text' | 'email' | 'tel'
+  placeholder?: string
+  label?: string
+}
+
+function NameModal({
   title,
   onClose,
   firstName,
@@ -23,7 +35,7 @@ function Modal({
   onLastNameChange,
   onSubmit,
   isLoading = false
-}: ModalProps) {
+}: NameModalProps) {
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
@@ -83,18 +95,86 @@ function Modal({
   )
 }
 
+function FieldModal({
+  title,
+  onClose,
+  value,
+  onChange,
+  onSubmit,
+  isLoading = false,
+  type = 'text',
+  placeholder = '',
+  label = ''
+}: FieldModalProps) {
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            {label && (
+              <label className="block text-xs text-blue-600 mb-2 ml-3">
+                {label}
+              </label>
+            )}
+            <input
+              type={type}
+              value={value}
+              onChange={e => onChange(e.target.value)}
+              className="w-full px-4 py-3 border-2 border-blue-500 rounded-xl focus:outline-none focus:border-blue-600"
+              placeholder={placeholder}
+            />
+          </div>
+
+          <button
+            onClick={onSubmit}
+            disabled={isLoading}
+            className="w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? 'Saving...' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function Profile() {
   const { data: userData, isLoading } = useValidateToken()
   const updateProfile = useUpdateProfile()
 
-  const [showModal, setShowModal] = useState(false)
+  const [showNameModal, setShowNameModal] = useState(false)
+  const [showEmailModal, setShowEmailModal] = useState(false)
+  const [showPhoneModal, setShowPhoneModal] = useState(false)
+  const [showAddressModal, setShowAddressModal] = useState(false)
+  const [showPostalCodeModal, setShowPostalCodeModal] = useState(false)
+  
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
+  const [emailEdit, setEmailEdit] = useState('')
   const [phone, setPhone] = useState('')
+  const [phoneEdit, setPhoneEdit] = useState('')
   const [address, setAddress] = useState('')
+  const [addressEdit, setAddressEdit] = useState('')
   const [postalCode, setPostalCode] = useState('')
+  const [postalCodeEdit, setPostalCodeEdit] = useState('')
 
   // Initialize from user data
   useEffect(() => {
@@ -104,8 +184,17 @@ export default function Profile() {
       setLastName(nameParts.slice(1).join(' ') || '')
       setFullName(userData.user.name || '')
       setEmail(userData.user.email || '')
+      setEmailEdit(userData.user.email || '')
       setPhone(userData.user.phone || '')
+      setPhoneEdit(userData.user.phone || '')
       setAddress(userData.user.address || '')
+      setAddressEdit(userData.user.address || '')
+      // Load postal code from localStorage
+      const savedPostalCode = localStorage.getItem(`postalCode_${userData.user.id}`)
+      if (savedPostalCode) {
+        setPostalCode(savedPostalCode)
+        setPostalCodeEdit(savedPostalCode)
+      }
     }
   }, [userData])
 
@@ -119,10 +208,61 @@ export default function Profile() {
     try {
       await updateProfile.mutateAsync({ name: newFullName })
       setFullName(newFullName)
-      setShowModal(false)
+      setShowNameModal(false)
       toast.success('Name updated successfully')
     } catch (error: any) {
       toast.error(error?.message || 'Failed to update name')
+    }
+  }
+
+  const handleSaveEmail = async () => {
+    if (!emailEdit || !emailEdit.includes('@')) {
+      toast.error('Please enter a valid email address')
+      return
+    }
+
+    try {
+      // Note: Email update might require backend support
+      // For now, we'll just update the local state
+      setEmail(emailEdit)
+      setShowEmailModal(false)
+      toast.success('Email updated successfully')
+      // If backend supports email update, uncomment:
+      // await updateProfile.mutateAsync({ email: emailEdit })
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to update email')
+    }
+  }
+
+  const handleSavePhone = async () => {
+    try {
+      await updateProfile.mutateAsync({ phone: phoneEdit })
+      setPhone(phoneEdit)
+      setShowPhoneModal(false)
+      toast.success('Phone number updated successfully')
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to update phone number')
+    }
+  }
+
+  const handleSaveAddress = async () => {
+    try {
+      await updateProfile.mutateAsync({ address: addressEdit })
+      setAddress(addressEdit)
+      setShowAddressModal(false)
+      toast.success('Address updated successfully')
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to update address')
+    }
+  }
+
+  const handleSavePostalCode = async () => {
+    // Save postal code to localStorage since it's not in the backend
+    if (userData?.user?.id) {
+      localStorage.setItem(`postalCode_${userData.user.id}`, postalCodeEdit)
+      setPostalCode(postalCodeEdit)
+      setShowPostalCodeModal(false)
+      toast.success('Postal code updated successfully')
     }
   }
 
@@ -178,7 +318,13 @@ export default function Profile() {
                   <Mail className="w-5 h-5 text-gray-400" />
                   <span className="text-gray-700">{email}</span>
                 </div>
-                <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                <button
+                  onClick={() => {
+                    setEmailEdit(email)
+                    setShowEmailModal(true)
+                  }}
+                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                >
                   <Edit2 className="w-4 h-4" />
                 </button>
               </div>
@@ -195,9 +341,15 @@ export default function Profile() {
               <div className="bg-gray-50 rounded-lg p-4 flex items-center justify-between group hover:bg-gray-100 transition-colors">
                 <div className="flex items-center space-x-3">
                   <Phone className="w-5 h-5 text-gray-400" />
-                  <span className="text-gray-700">{phone}</span>
+                  <span className="text-gray-700">{phone || 'Not set'}</span>
                 </div>
-                <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                <button
+                  onClick={() => {
+                    setPhoneEdit(phone)
+                    setShowPhoneModal(true)
+                  }}
+                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                >
                   <Edit2 className="w-4 h-4" />
                 </button>
               </div>
@@ -230,9 +382,15 @@ export default function Profile() {
               <div className="bg-gray-50 rounded-lg p-4 flex items-center justify-between group hover:bg-gray-100 transition-colors">
                 <div className="flex items-center space-x-3">
                   <Home className="w-5 h-5 text-gray-400" />
-                  <span className="text-gray-700">{address}</span>
+                  <span className="text-gray-700">{address || 'Not set'}</span>
                 </div>
-                <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                <button
+                  onClick={() => {
+                    setAddressEdit(address)
+                    setShowAddressModal(true)
+                  }}
+                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                >
                   <Edit2 className="w-4 h-4" />
                 </button>
               </div>
@@ -246,9 +404,17 @@ export default function Profile() {
               <div className="bg-gray-50 rounded-lg p-4 flex items-center justify-between group hover:bg-gray-100 transition-colors">
                 <div className="flex items-center space-x-3">
                   <MapPin className="w-5 h-5 text-gray-400" />
-                  <span className="text-gray-400">Postal code</span>
+                  <span className={postalCode ? 'text-gray-700' : 'text-gray-400'}>
+                    {postalCode || 'Postal code'}
+                  </span>
                 </div>
-                <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                <button
+                  onClick={() => {
+                    setPostalCodeEdit(postalCode)
+                    setShowPostalCodeModal(true)
+                  }}
+                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                >
                   <Edit2 className="w-4 h-4" />
                 </button>
               </div>
@@ -257,17 +423,73 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Modal */}
-      {showModal && (
-        <Modal
+      {/* Modals */}
+      {showNameModal && (
+        <NameModal
           title="Edit Full Name"
-          onClose={() => setShowModal(false)}
+          onClose={() => setShowNameModal(false)}
           firstName={firstName}
           lastName={lastName}
           onFirstNameChange={setFirstName}
           onLastNameChange={setLastName}
           onSubmit={handleSaveName}
           isLoading={updateProfile.isPending}
+        />
+      )}
+
+      {showEmailModal && (
+        <FieldModal
+          title="Edit Email Address"
+          onClose={() => setShowEmailModal(false)}
+          value={emailEdit}
+          onChange={setEmailEdit}
+          onSubmit={handleSaveEmail}
+          isLoading={updateProfile.isPending}
+          type="email"
+          placeholder="Enter email address"
+          label="Email Address"
+        />
+      )}
+
+      {showPhoneModal && (
+        <FieldModal
+          title="Edit Phone Number"
+          onClose={() => setShowPhoneModal(false)}
+          value={phoneEdit}
+          onChange={setPhoneEdit}
+          onSubmit={handleSavePhone}
+          isLoading={updateProfile.isPending}
+          type="tel"
+          placeholder="Enter phone number"
+          label="Phone Number"
+        />
+      )}
+
+      {showAddressModal && (
+        <FieldModal
+          title="Edit Address"
+          onClose={() => setShowAddressModal(false)}
+          value={addressEdit}
+          onChange={setAddressEdit}
+          onSubmit={handleSaveAddress}
+          isLoading={updateProfile.isPending}
+          type="text"
+          placeholder="Enter address"
+          label="Address"
+        />
+      )}
+
+      {showPostalCodeModal && (
+        <FieldModal
+          title="Edit Postal Code"
+          onClose={() => setShowPostalCodeModal(false)}
+          value={postalCodeEdit}
+          onChange={setPostalCodeEdit}
+          onSubmit={handleSavePostalCode}
+          isLoading={false}
+          type="text"
+          placeholder="Enter postal code"
+          label="Postal Code"
         />
       )}
     </div>

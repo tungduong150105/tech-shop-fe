@@ -1,5 +1,6 @@
 import CheckboxFilter from './CheckboxFilter'
 import type { DynamicFilters } from '../../pages/Collection'
+import { SidebarSkeleton } from '../common/LoadingSkeleton'
 
 type SidebarFiltersProps = {
   filters: DynamicFilters
@@ -13,14 +14,7 @@ const SidebarFilters = ({ filters, onFilterChange, onClearAll, isLoading = false
   const filterKeys = Object.keys(filters.options).sort()
 
   if (isLoading) {
-    return (
-      <div className="w-64 flex-shrink-0">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold">Filters</h2>
-        </div>
-        <div className="text-sm text-gray-500">Loading filters...</div>
-      </div>
-    )
+    return <SidebarSkeleton />
   }
 
   if (filterKeys.length === 0) {

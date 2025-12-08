@@ -38,31 +38,47 @@ export default function AdminCategoryEdit() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Edit Category</h1>
-        <button onClick={onSubmit as any} className="px-3 py-2 bg-green-600 text-white rounded">Save</button>
+        <button
+          onClick={onSubmit as any}
+          className="px-3 py-2 bg-green-600 text-white rounded"
+        >
+          Save
+        </button>
       </div>
 
-      <form onSubmit={onSubmit} className="bg-white p-4 rounded border max-w-xl grid gap-3">
-        <input className="border rounded px-3 py-2" placeholder="Name" value={name} onChange={e => setName(e.target.value)} />
-        <textarea className="border rounded px-3 py-2" rows={3} placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} />
+      <form
+        onSubmit={onSubmit}
+        className="bg-white p-4 rounded border max-w-xl grid gap-3"
+      >
+        <input
+          className="border rounded px-3 py-2"
+          placeholder="Name"
+          value={name}
+          onChange={e => setName(e.target.value)}
+        />
+        <textarea
+          className="border rounded px-3 py-2"
+          rows={3}
+          placeholder="Description"
+          value={description}
+          onChange={e => setDescription(e.target.value)}
+        />
         <div className="grid gap-2">
           <label className="text-sm">Image</label>
           <div className="flex items-center gap-3">
-            <input type="file" accept="image/*" className="border rounded px-3 py-2" onChange={e => {
-              const f = e.target.files?.[0]
-              setImageFile(f)
-              if (f) setImageUrl('')
-            }} />
-            {imageUrl ? (
-              <img src={imageUrl} className="h-10 w-10 rounded border object-cover" />
-            ) : imageFile ? (
-              <img src={URL.createObjectURL(imageFile)} className="h-10 w-10 rounded border object-cover" />
-            ) : null}
+            <input
+              type="file"
+              accept="image/*"
+              className="border rounded px-3 py-2"
+              onChange={e => {
+                const f = e.target.files?.[0]
+                setImageFile(f)
+                if (f) setImageUrl('')
+              }}
+            />
           </div>
-          <input className="border rounded px-3 py-2" placeholder="Or paste image URL" value={imageUrl} onChange={e => setImageUrl(e.target.value)} />
         </div>
       </form>
     </div>
   )
 }
-
-

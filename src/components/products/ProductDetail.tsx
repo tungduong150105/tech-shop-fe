@@ -61,7 +61,6 @@ interface ProductDetailProps {
 }
 
 const ProductDetail = ({ product }: ProductDetailProps) => {
-  window.scrollTo(0, 0)
   const [selectedInfo, setSelectedInfo] = useState('technical')
   const [mainImage, setMainImage] = useState(
     'https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'
@@ -73,6 +72,11 @@ const ProductDetail = ({ product }: ProductDetailProps) => {
   const { data: similarProducts } = useSimilarProducts(Number(product.category_id))
   const { data: reviewOfProduct, isLoading: reviewLoading } = useProductReviews(Number(product.id))
   console.log('Review of product:', reviewOfProduct)
+
+  useEffect(() => {
+    // Scroll to top only when the product changes, not on every render or tab switch
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [product?.id])
 
   useEffect(() => {
     if (product?.img?.length > 0) {
@@ -203,7 +207,8 @@ const ProductDetail = ({ product }: ProductDetailProps) => {
           <Payment
             discount={product.discount}
             price={product.price}
-            color={selectedColor}
+            selectedColor={selectedColor}
+            colors={product.color}
             id={product.id}
             quantity={product.quantity}
           />

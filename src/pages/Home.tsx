@@ -4,18 +4,18 @@ import ListProduct from '../components/products/ListProduct'
 import { useNewProducts, usePopularProducts } from '../hooks/useProducts'
 
 const Home = () => {
-  const { data: newProduct } = useNewProducts()
-  const { data: popularProduct } = usePopularProducts()
+  const { data: newProduct, isLoading: loadingNew } = useNewProducts()
+  const { data: popularProduct, isLoading: loadingPopular } = usePopularProducts()
 
   return (
     <div>
       <Hero />
       <Categories />
       <div className="px-12">
-        <ListProduct title="New Product" products={newProduct || null} />
+        <ListProduct title="New Product" products={newProduct || null} isLoading={loadingNew} />
       </div>
       <div className="px-12">
-        <ListProduct title="Best Seller" products={popularProduct || null} />
+        <ListProduct title="Best Seller" products={popularProduct || null} isLoading={loadingPopular} />
       </div>
     </div>
   )

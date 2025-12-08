@@ -5,39 +5,49 @@ import { useAddToCart } from '../../hooks/useCart'
 interface ProductProps {
   discount: number
   price: number
-  color: string
+  selectedColor: string
+  colors: { name: string; code: string }[]
   id: number
   quantity: number
 }
 
-const Payment = ({ discount, price, color, id, quantity }: ProductProps) => {
+const Payment = ({ discount, price, selectedColor, colors, id, quantity }: ProductProps) => {
   const [paymentType, setPaymentType] = useState('now')
   const installmentOptions = [3, 6, 12, 24]
   const [selectedMonths, setSelectedMonths] = useState<number>(3)
   const addToCartMutation = useAddToCart()
 
   function AddToCart() {
-    console.log(paymentType, selectedMonths, id, color)
-    console.log('Add to cart clicked')
-    if (quantity > 0) {
-      addToCartMutation.mutate(
-        {
-          productId: id,
-          payload: {
-            color: color,
-            quantity: 1
-          }
-        },
-        {
-          onSuccess: () => {
-            toast.success('Add to Cart completed successfully!')
-          },
-          onError: () => {
-            toast.error('Failed to add to cart')
-          }
-        }
-      )
+    if (quantity <= 0) return
+    const token = localStorage.getItem('accessToken')
+    if (!token) {
+      toast.error('Please login to add to cart')
+      return
     }
+
+    const colorObj = colors.find(c => c.name === selectedColor) || {
+      name: selectedColor,
+      code: ''
+    }
+
+    addToCartMutation.mutate(
+      {
+        productId: id,
+        payload: {
+          color: colorObj,
+          quantity: 1
+        }
+      },
+      {
+        onSuccess: () => {
+          toast.success('Added to cart')
+        },
+        onError: (err: any) => {
+          const message = err?.response?.data?.message || 'Failed to add to cart'
+          toast.error(message)
+        }
+      }
+    )
   }
   function BuyNow() {
     console.log(paymentType, selectedMonths, id, color)

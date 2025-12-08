@@ -5,6 +5,7 @@ import SidebarFilters from '../components/collection/SidebarFilters'
 import SortDropdown from '../components/collection/SortDropdown'
 import ProductGrid from '../components/collection/ProductGrid'
 import Pagination from '../components/collection/Pagination'
+import { ProductGridSkeleton, SectionSkeleton } from '../components/common/LoadingSkeleton'
 
 import { useCollectionProducts } from '../hooks/useProducts'
 import { useCategories } from '../hooks/useCategories'
@@ -128,10 +129,17 @@ const Collection = () => {
   )
 
   useEffect(() => {
-    window.scrollTo(0, 0)
-    setProducts(allProducts)
-    setTotalPages(allProducts ? allProducts.pagination.total_pages : 1)
-  }, [allProducts, currentPage, filterString])
+    if (allProducts) {
+      setProducts(allProducts)
+      const total = allProducts.pagination?.total_pages || 1
+      setTotalPages(total)
+    }
+  }, [allProducts])
+
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [currentPage])
 
   // Dynamic filter string converter
   const convertFilterArrayToString = useCallback(() => {
@@ -149,10 +157,9 @@ const Collection = () => {
   }, [filters.selected])
 
   useEffect(() => {
-    console.log('Selected Tags: ', selectedTags)
-    setFilterString(convertFilterArrayToString())
-    setCurrentPage(1)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const newFilterString = convertFilterArrayToString()
+    setFilterString(newFilterString)
+    setCurrentPage(1) // Reset to page 1 when filters or sort change
   }, [sortBy, convertFilterArrayToString])
 
   // Dynamic filter change handler
@@ -189,6 +196,7 @@ const Collection = () => {
       selected: {}
     }))
     setSelectedTags([])
+    setCurrentPage(1) // Reset to page 1 when clearing filters
   }
 
   const removeTag = (tag: string) => {
@@ -232,14 +240,51 @@ const Collection = () => {
             />
           </div>
 
-          {isLoading && <div>Loading products...</div>}
-          {!isLoading && <ProductGrid products={products?.products || []} />}
+          {isLoading && (
+            <div className="space-y-4">
+              <SectionSkeleton />
+              <ProductGridSkeleton count={9} />
+            </div>
+          )}
 
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-          />
+          {!isLoading && products && (
+            <>
+              {products.products.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  No products found
+                </div>
+              ) : (
+                <>
+                  <div className="mb-4 text-sm text-gray-600">
+                    Showing{' '}
+                    {products.pagination
+                      ? `${
+                          (products.pagination.current_page - 1) *
+                            products.pagination.per_page +
+                          1
+                        }-${Math.min(
+                          products.pagination.current_page *
+                            products.pagination.per_page,
+                          products.pagination.total_count
+                        )} of ${products.pagination.total_count} products`
+                      : `${products.products.length} products`}
+                  </div>
+                  <ProductGrid products={products.products} />
+
+                  {/* Pagination - Always show if we have pagination data */}
+                  {products.pagination && (
+                    <div className="mt-8 pt-6 border-t border-gray-200">
+                      <Pagination
+                        currentPage={currentPage}
+                        totalPages={products.pagination.total_pages}
+                        onPageChange={setCurrentPage}
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>

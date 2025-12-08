@@ -63,10 +63,21 @@ export const useProductReviews = (productId: number) =>
     staleTime: 5 * 60 * 1000
   })
 
-export const useSearchProducts = (query: string) =>
+export type SearchOptions = {
+  category_id?: number | string
+  sub_category_id?: number | string
+  price_min?: number
+  price_max?: number
+  rating_min?: number
+  sort?: 'price-asc' | 'price-desc' | 'rating' | 'popular' | 'newest'
+  page?: number
+  limit?: number
+}
+
+export const useSearchProducts = (query: string, options?: SearchOptions) =>
   useQuery<ListProductRes>({
-    queryKey: ['searchProducts', query],
-    queryFn: () => searchProducts(query),
+    queryKey: ['searchProducts', query, options],
+    queryFn: () => searchProducts({ query, ...options }),
     enabled: !!query?.trim(),
     staleTime: 60 * 1000
   })

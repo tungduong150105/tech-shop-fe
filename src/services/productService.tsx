@@ -56,9 +56,28 @@ export const fetchReview = async (product_id: number): Promise<ReviewRes> => {
   return data
 }
 
-export const searchProducts = async (query: string): Promise<ListProductRes> => {
+type SearchParams = {
+  query: string
+  category_id?: number | string
+  sub_category_id?: number | string
+  price_min?: number
+  price_max?: number
+  rating_min?: number
+  sort?: 'price-asc' | 'price-desc' | 'rating' | 'popular' | 'newest'
+  page?: number
+  limit?: number
+}
+
+export const searchProducts = async (
+  params: SearchParams | string
+): Promise<ListProductRes> => {
+  const normalized =
+    typeof params === 'string'
+      ? { query: params }
+      : { sort: 'newest', page: 1, limit: 20, ...params }
+
   const { data } = await axiosClient.get<ListProductRes>('/products/search', {
-    params: { query }
+    params: normalized
   })
   return data
 }
