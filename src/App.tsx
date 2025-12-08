@@ -1,12 +1,15 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import UserLayout from './components/layout/UserLayout'
-import Home from './pages/Home'
-import { Toaster } from 'sonner'
-import Detail from './pages/Detail'
-import Profile from './pages/Profile'
-import Collection from './pages/Collection'
+import { Toaster, toast } from 'sonner'
+
+import UserLayout from './client/layout/UserLayout'
+import Home from './client/pages/Home'
+import Detail from './client/pages/Detail'
+import Profile from './client/pages/Profile'
+import Collection from './client/pages/Collection'
+import Checkout from './client/pages/Checkout'
+import PaymentResult from './client/pages/PaymentResult'
 import AdminLayout from './admin/components/AdminLayout'
 import AdminProductsList from './admin/pages/products/List'
 import AdminProductEdit from './admin/pages/products/Edit'
@@ -25,15 +28,85 @@ import AdminCustomersList from './admin/pages/customers/List'
 import AdminFiltersList from './admin/pages/filters/List'
 import AdminFilterCreate from './admin/pages/filters/Create'
 import AdminFilterEdit from './admin/pages/filters/Edit'
-import Cart from './pages/Cart'
+import AdminSettingsList from './admin/pages/settings/List'
+import AdminChatList from './admin/pages/chat/List'
+import Cart from './client/pages/Cart'
 
 const queryClient = new QueryClient()
 
 function App() {
+  useEffect(() => {
+    // Use MutationObserver to detect when toast elements are added to DOM
+    const observer = new MutationObserver(mutations => {
+      mutations.forEach(mutation => {
+        mutation.addedNodes.forEach(node => {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const element = node as HTMLElement
+            // Check if this is a toast element (Sonner uses [data-sonner-toast] attribute)
+            const toastElement =
+              element.querySelector('[data-sonner-toast]') ||
+              (element.hasAttribute('[data-sonner-toast]') ? element : null) ||
+              (element.classList.contains('sonner-toast') ? element : null)
+
+            if (
+              toastElement &&
+              !toastElement.hasAttribute('data-click-handler')
+            ) {
+              const htmlElement = toastElement as HTMLElement
+              // Mark as handled
+              htmlElement.setAttribute('data-click-handler', 'true')
+
+              // Add click handler
+              htmlElement.addEventListener('click', e => {
+                const target = e.target as HTMLElement
+                // Don't dismiss if clicking buttons
+                if (!target.closest('button')) {
+                  // Get toast ID from element
+                  const toastId =
+                    htmlElement.getAttribute('data-toast-id') ||
+                    htmlElement.id?.replace('sonner-toast-', '')
+                  if (toastId) {
+                    toast.dismiss(toastId)
+                  } else {
+                    // Fallback: dismiss the specific toast element
+                    toast.dismiss()
+                  }
+                }
+              })
+
+              // Add cursor pointer style
+              if (!htmlElement.style.cursor) {
+                htmlElement.style.cursor = 'pointer'
+              }
+            }
+          }
+        })
+      })
+    })
+
+    // Start observing the document body for added nodes
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    })
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [])
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <Toaster position="top-right" />
+        <Toaster
+          position="top-right"
+          closeButton
+          toastOptions={{
+            style: {
+              cursor: 'pointer'
+            }
+          }}
+        />
         <Routes>
           <Route path="/" element={<UserLayout />}>
             {/* User Layout */}
@@ -42,6 +115,8 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/collection/:collection" element={<Collection />} />
             <Route path="/cart" element={<Cart />} />
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/payment-result" element={<PaymentResult />} />
           </Route>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
@@ -71,6 +146,8 @@ function App() {
               <Route index element={<AdminOrdersList />} />
               <Route path=":id" element={<AdminOrderDetail />} />
             </Route>
+            <Route path="chat" element={<AdminChatList />} />
+            <Route path="settings" element={<AdminSettingsList />} />
           </Route>
         </Routes>
       </BrowserRouter>

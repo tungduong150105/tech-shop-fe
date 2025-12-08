@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useAdminOrders } from '../../hooks'
+import { useAdminOrders, useAdminOrderStats } from '../../hooks'
 import SkeletonTable from '../../components/common/SkeletonTable'
 
 export default function AdminOrdersList() {
@@ -14,18 +14,37 @@ export default function AdminOrdersList() {
     status,
     q: q || undefined
   })
+  const { data: statsData, isLoading: statsLoading } = useAdminOrderStats()
   const pages = useMemo(
     () => Math.max(1, data?.data.pagination.pages || 1),
     [data]
   )
 
+  const stats = statsData?.data
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-        <KpiCard title="Total Orders" value="1,240" delta="+10.4%" />
-        <KpiCard title="New Orders" value="240" delta="+20%" />
-        <KpiCard title="Completed Orders" value="960" delta="+5%" />
-        <KpiCard title="Canceled Orders" value="87" delta="-14.8%" />
+        <KpiCard
+          title="Total Orders"
+          value={statsLoading ? '...' : formatNumber(stats?.total_orders || 0)}
+          delta=""
+        />
+        <KpiCard
+          title="New Orders"
+          value={statsLoading ? '...' : formatNumber(stats?.pending_orders || 0)}
+          delta=""
+        />
+        <KpiCard
+          title="Total Revenue"
+          value={statsLoading ? '...' : formatCurrency(stats?.revenue || 0)}
+          delta=""
+        />
+        <KpiCard
+          title="Recent Orders"
+          value={statsLoading ? '...' : formatNumber(stats?.recent_orders?.length || 0)}
+          delta=""
+        />
       </div>
 
       <div className="bg-white rounded border">
@@ -97,18 +116,7 @@ export default function AdminOrdersList() {
                   </td>
                   <td className="p-2">${Number(o.total_amount)}</td>
                   <td className="p-2 flex items-center gap-2">
-                    <span
-                      className={`inline-flex items-center gap-1 text-xs ${
-                        Math.random() > 0.5 ? 'text-green-700' : 'text-red-700'
-                      }`}
-                    >
-                      <span
-                        className={`h-2 w-2 rounded-full ${
-                          Math.random() > 0.5 ? 'bg-green-500' : 'bg-red-500'
-                        }`}
-                      />
-                      {Math.random() > 0.5 ? 'Paid' : 'Unpaid'}
-                    </span>
+                    {getPaymentStatus(o.payment_method)}
                   </td>
                   <td className="p-2">
                     <Link
@@ -198,4 +206,47 @@ function statusClass(status: string) {
     default:
       return 'px-2 py-1 rounded bg-gray-100 text-gray-700'
   }
+}
+
+function getPaymentStatus(paymentMethod: string | null | undefined) {
+  if (!paymentMethod) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs text-red-700">
+        <span className="h-2 w-2 rounded-full bg-red-500" />
+        Unpaid
+      </span>
+    )
+  }
+  
+  const method = paymentMethod.toLowerCase()
+  if (method === 'cod') {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs text-yellow-700">
+        <span className="h-2 w-2 rounded-full bg-yellow-500" />
+        COD
+      </span>
+    )
+  }
+  
+  return (
+    <span className="inline-flex items-center gap-1 text-xs text-green-700">
+      <span className="h-2 w-2 rounded-full bg-green-500" />
+      Paid
+    </span>
+  )
+}
+
+function formatNumber(num: number): string {
+  if (num >= 1000) {
+    return `${(num / 1000).toFixed(1)}k`
+  }
+  return num.toString()
+}
+
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+  }).format(amount)
 }

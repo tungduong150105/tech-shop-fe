@@ -10,6 +10,7 @@ export type AuthUser = {
   role: string
   phone: string | null
   address: string | null
+  avatar: string | null
 }
 
 export type AuthRes = {

@@ -1,7 +1,23 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { useDashboardStats, useTopProducts } from '../hooks'
 
 export default function AdminDashboard() {
+  const { data: statsData, isLoading: statsLoading } = useDashboardStats()
+  const { data: topProductsData, isLoading: topProductsLoading } = useTopProducts(4)
+
+  const stats = statsData?.data
+  const topProducts = topProductsData?.data || []
+
+  if (statsLoading) {
+    return (
+      <div className="grid gap-6">
+        <h1 className="text-xl font-semibold">Dashboard</h1>
+        <div className="text-center py-8 text-gray-500">Loading dashboard...</div>
+      </div>
+    )
+  }
+
   return (
     <div className="grid gap-6">
       <h1 className="text-xl font-semibold">Dashboard</h1>
@@ -10,22 +26,30 @@ export default function AdminDashboard() {
         <KpiCard
           title="Total Sales"
           subtitle="Last 7 days"
-          value="$350K"
-          delta="+10.4%"
-          prev="Previous 7days (325K)"
+          value={stats?.sales.formatted || '$0'}
+          delta={stats?.sales.delta || '0%'}
+          prev={`Previous 7days (${stats?.sales.formattedPrev || '$0'})`}
         />
         <KpiCard
           title="Total Orders"
           subtitle="Last 7 days"
-          value="10.7K"
-          delta="+14.6%"
-          prev="Previous 7days (7.4k)"
+          value={stats?.orders.formatted || '0'}
+          delta={stats?.orders.delta || '0%'}
+          prev={`Previous 7days (${stats?.orders.formattedPrev || '0'})`}
         />
         <KpiSplitCard
           title="Pending & Canceled"
           subtitle="Last 7 days"
-          left={{ label: 'Pending', value: '509', delta: '+12.0%' }}
-          right={{ label: 'Canceled', value: '94', delta: '-14.4%' }}
+          left={{
+            label: 'Pending',
+            value: stats?.pending.formatted || '0',
+            delta: stats?.pending.delta || '0%'
+          }}
+          right={{
+            label: 'Canceled',
+            value: stats?.cancelled.formatted || '0',
+            delta: stats?.cancelled.delta || '0%'
+          }}
         />
       </div>
 
@@ -43,23 +67,23 @@ export default function AdminDashboard() {
           </div>
           <div className="grid grid-cols-5 gap-4 p-4 text-center text-sm">
             <div>
-              <div className="text-2xl font-semibold">52k</div>
+              <div className="text-2xl font-semibold">{stats?.customers.formatted || '0'}</div>
               <div className="text-gray-500">Customers</div>
             </div>
             <div>
-              <div className="text-2xl font-semibold">3.5k</div>
+              <div className="text-2xl font-semibold">{stats?.products.formatted.total || '0'}</div>
               <div className="text-gray-500">Total Products</div>
             </div>
             <div>
-              <div className="text-2xl font-semibold">2.5k</div>
+              <div className="text-2xl font-semibold">{stats?.products.formatted.inStock || '0'}</div>
               <div className="text-gray-500">Stock Products</div>
             </div>
             <div>
-              <div className="text-2xl font-semibold">0.5k</div>
+              <div className="text-2xl font-semibold">{stats?.products.formatted.outOfStock || '0'}</div>
               <div className="text-gray-500">Out of Stock</div>
             </div>
             <div>
-              <div className="text-2xl font-semibold">250k</div>
+              <div className="text-2xl font-semibold">{stats?.revenue.formatted || '$0'}</div>
               <div className="text-gray-500">Revenue</div>
             </div>
           </div>
@@ -68,41 +92,35 @@ export default function AdminDashboard() {
         <div className="bg-white rounded border">
           <div className="p-4 flex items-center justify-between border-b">
             <div className="font-semibold">Top Products</div>
-            <Link to="#" className="text-sm text-blue-600">
+            <Link to="/admin/products" className="text-sm text-blue-600">
               All product
             </Link>
           </div>
           <div className="p-4">
-            <div className="relative mb-3">
-              <input
-                className="w-full border rounded px-3 py-2 pl-9 text-sm"
-                placeholder="Search"
-              />
-              <svg
-                className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.3-4.3" />
-              </svg>
-            </div>
-            <div className="space-y-3 text-sm">
-              {topProducts.map(p => (
-                <div key={p.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded bg-gray-200" />
-                    <div>
-                      <div className="font-medium">{p.name}</div>
-                      <div className="text-gray-500">{p.sku}</div>
+            {topProductsLoading ? (
+              <div className="text-center py-4 text-gray-500 text-sm">Loading...</div>
+            ) : topProducts.length === 0 ? (
+              <div className="text-center py-4 text-gray-500 text-sm">No products yet</div>
+            ) : (
+              <div className="space-y-3 text-sm">
+                {topProducts.map(p => (
+                  <div key={p.id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {p.image ? (
+                        <img src={p.image} alt={p.name} className="h-8 w-8 rounded object-cover" />
+                      ) : (
+                        <div className="h-8 w-8 rounded bg-gray-200" />
+                      )}
+                      <div>
+                        <div className="font-medium">{p.name}</div>
+                        <div className="text-gray-500">{p.sku}</div>
+                      </div>
                     </div>
+                    <div className="font-semibold">{p.price}</div>
                   </div>
-                  <div className="font-semibold">{p.price}</div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -211,9 +229,3 @@ function ChartPlaceholder() {
   )
 }
 
-const topProducts = [
-  { name: 'Apple iPhone 13', sku: 'IP13', price: '$999.00' },
-  { name: 'Nike Air Jordan', sku: 'NK-AJ', price: '$72.40' },
-  { name: 'T-shirt', sku: 'TS-001', price: '$35.40' },
-  { name: 'Assorted Cross Bag', sku: 'ACB-1', price: '$80.00' }
-]
