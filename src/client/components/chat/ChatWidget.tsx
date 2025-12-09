@@ -6,6 +6,19 @@ import { toast } from 'sonner'
 import { io, Socket } from 'socket.io-client'
 
 const ChatWidget = () => {
+  const { data: userData } = useValidateToken()
+  const hasToken = !!localStorage.getItem('accessToken')
+  const isAdmin = userData?.user?.role === 'admin'
+
+  // Guard: only render inner widget when logged in and not admin
+  if (!hasToken || isAdmin || !userData?.user) {
+    return null
+  }
+
+  return <ChatWidgetInner userId={userData.user.id} />
+}
+
+function ChatWidgetInner({ userId }: { userId: string | number }) {
   const [isOpen, setIsOpen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
   const [message, setMessage] = useState('')
@@ -13,23 +26,15 @@ const ChatWidget = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const chatContainerRef = useRef<HTMLDivElement>(null)
 
-  const { data: userData } = useValidateToken()
-  const { data: chatData, refetch } = useChat()
+  const { data: chatData, refetch } = useChat(true)
   const sendMessageMutation = useSendMessage()
   const markAsReadMutation = useMarkMessagesAsRead()
 
   const chat = chatData?.data
   const messages = chat?.messages || []
 
-  // Don't show chat widget for admin users
-  if (userData?.user?.role === 'admin') {
-    return null
-  }
-
   // Setup Socket.io connection
   useEffect(() => {
-    if (!userData?.user) return
-
     const token = localStorage.getItem('accessToken')
     if (!token) return
 
@@ -41,13 +46,12 @@ const ChatWidget = () => {
     })
 
     newSocket.on('connect', () => {
-      console.log('Socket connected')
       if (chat?.id) {
         newSocket.emit('join_chat', chat.id)
       }
     })
 
-    newSocket.on('new_message', (newMessage) => {
+    newSocket.on('new_message', () => {
       refetch()
     })
 
@@ -57,16 +61,12 @@ const ChatWidget = () => {
       }
     })
 
-    newSocket.on('disconnect', () => {
-      console.log('Socket disconnected')
-    })
-
     setSocket(newSocket)
 
     return () => {
       newSocket.close()
     }
-  }, [userData, chat?.id, refetch])
+  }, [chat?.id, refetch])
 
   // Join chat room when chat is loaded
   useEffect(() => {
@@ -84,11 +84,11 @@ const ChatWidget = () => {
 
   // Mark messages as read when chat is opened
   useEffect(() => {
-    if (isOpen && chat?.id && userData?.user) {
+    if (isOpen && chat?.id) {
       // Mark admin messages as read when customer opens chat
       markAsReadMutation.mutate(parseInt(chat.id))
     }
-  }, [isOpen, chat?.id, userData?.user])
+  }, [isOpen, chat?.id, markAsReadMutation])
 
   const handleSendMessage = async () => {
     if (!message.trim() || !chat) return
@@ -124,10 +124,6 @@ const ChatWidget = () => {
       hour: '2-digit',
       minute: '2-digit',
     })
-  }
-
-  if (!userData?.user) {
-    return null
   }
 
   return (
@@ -194,7 +190,7 @@ const ChatWidget = () => {
                   </div>
                 ) : (
                   messages.map((msg) => {
-                    const isOwnMessage = msg.sender_id === userData.user?.id.toString()
+                    const isOwnMessage = msg.sender_id === userId.toString()
                     return (
                       <div
                         key={msg.id}

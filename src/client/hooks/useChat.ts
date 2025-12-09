@@ -10,12 +10,13 @@ import {
   type ChatsResponse
 } from '../services/chatService'
 
-export const useChat = () => {
+export const useChat = (enabled: boolean = true) => {
   return useQuery<ChatResponse, Error>({
     queryKey: ['chat'],
     queryFn: getOrCreateChat,
     staleTime: 30 * 1000, // 30 seconds
     refetchInterval: 5000, // Poll every 5 seconds
+    enabled,
   })
 }
 
