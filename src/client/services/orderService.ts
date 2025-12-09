@@ -43,3 +43,13 @@ export const createOrder = async (payload: CreateOrderPayload): Promise<{ messag
   return data
 }
 
+export const fetchMyOrders = async (): Promise<Order[]> => {
+  const { data } = await axiosClient.get('/orders/user/orders')
+  return data
+}
+
+export const cancelMyOrder = async (orderId: number) => {
+  const { data } = await axiosClient.patch(`/orders/${orderId}/cancel`, {})
+  return data
+}
+

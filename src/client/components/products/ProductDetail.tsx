@@ -26,11 +26,16 @@ const ProductDetail = ({ product }: ProductDetailProps) => {
   const [mainImage, setMainImage] = useState(
     'https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'
   )
-  const [selectedColor, setSelectedColor] = useState('Gray')
+  const [selectedColor, setSelectedColor] = useState<string>('')
   const [expanded, setExpanded] = useState(false)
   const visibleCount = expanded ? product.specs.length : 5
 
   const { data: similarProducts } = useSimilarProducts(Number(product.category_id))
+
+  const colors =
+    (product.available_colors && product.available_colors.length > 0
+      ? product.available_colors
+      : product.color) || []
 
   useEffect(() => {
     // Scroll to top only when the product changes, not on every render or tab switch
@@ -41,10 +46,12 @@ const ProductDetail = ({ product }: ProductDetailProps) => {
     if (product?.img?.length > 0) {
       setMainImage(product.img[0])
     }
-    if (product?.color?.length > 0) {
-      setSelectedColor(product.color[0].name)
+    if (colors.length > 0) {
+      setSelectedColor(colors[0].name)
+    } else {
+      setSelectedColor('')
     }
-  }, [product])
+  }, [product, colors])
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -102,15 +109,15 @@ const ProductDetail = ({ product }: ProductDetailProps) => {
                 </div>
               </div>
 
-              {/* Color Selection */}
-              {product.color && product.color.length > 0 && (
+            {/* Color Selection */}
+            {colors && colors.length > 0 && (
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-3">Color</h3>
                   <div className="flex gap-3">
-                    {product.color.map(c => (
+                  {colors.map(c => (
                       <button
                         key={c.name}
-                        onClick={() => setSelectedColor(c.name)}
+                      onClick={() => setSelectedColor(c.name)}
                         className={`w-10 h-10 rounded-full border-2 transition-all ${
                           c.name === selectedColor
                             ? 'border-blue-600 ring-2 ring-blue-200 scale-110'
@@ -187,7 +194,7 @@ const ProductDetail = ({ product }: ProductDetailProps) => {
                 discount={product.discount}
                 price={product.price}
                 selectedColor={selectedColor}
-                colors={product.color}
+                colors={colors}
                 id={product.id}
                 quantity={product.quantity}
               />

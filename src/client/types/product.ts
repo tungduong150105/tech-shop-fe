@@ -13,7 +13,8 @@ export type Product = {
   img: string[]
   specs: { label: string; value: string }[]
   specs_detail: { label: string; value: string }[]
-  color: { name: string; code: string }[]
+  color: { name: string; code: string; quantity?: number }[]
+  available_colors?: { name: string; code: string; quantity?: number }[]
   category_id: number
   sub_category_id: number
 }

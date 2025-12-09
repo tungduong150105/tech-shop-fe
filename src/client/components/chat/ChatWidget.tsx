@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { MessageCircle, X, Send, Minimize2 } from 'lucide-react'
-import { useChat, useSendMessage, useMarkMessagesAsRead } from '../../hooks/useChat'
+import {
+  useChat,
+  useSendMessage,
+  useMarkMessagesAsRead
+} from '../../hooks/useChat'
 import { useValidateToken } from '../../hooks/useAuth'
 import { toast } from 'sonner'
 import { io, Socket } from 'socket.io-client'
@@ -38,11 +42,12 @@ function ChatWidgetInner({ userId }: { userId: string | number }) {
     const token = localStorage.getItem('accessToken')
     if (!token) return
 
-    const apiUrl = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3000'
+    const apiUrl =
+      (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3000'
     const socketUrl = apiUrl.replace('/api', '')
     const newSocket = io(socketUrl, {
       auth: { token },
-      transports: ['websocket', 'polling'],
+      transports: ['websocket', 'polling']
     })
 
     newSocket.on('connect', () => {
@@ -55,7 +60,7 @@ function ChatWidgetInner({ userId }: { userId: string | number }) {
       refetch()
     })
 
-    newSocket.on('new_chat_message', (data) => {
+    newSocket.on('new_chat_message', data => {
       if (data.chatId === chat?.id) {
         refetch()
       }
@@ -97,12 +102,12 @@ function ChatWidgetInner({ userId }: { userId: string | number }) {
       if (socket) {
         socket.emit('send_message', {
           chatId: chat.id,
-          content: message.trim(),
+          content: message.trim()
         })
       } else {
         await sendMessageMutation.mutateAsync({
           chatId: parseInt(chat.id),
-          content: message.trim(),
+          content: message.trim()
         })
       }
       setMessage('')
@@ -122,7 +127,7 @@ function ChatWidgetInner({ userId }: { userId: string | number }) {
     const date = new Date(dateString)
     return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
-      minute: '2-digit',
+      minute: '2-digit'
     })
   }
 
@@ -139,11 +144,17 @@ function ChatWidgetInner({ userId }: { userId: string | number }) {
           aria-label="Open chat"
         >
           <MessageCircle className="w-6 h-6" />
-          {chat && chat.messages.filter((m) => !m.is_read && m.sender.role === 'admin').length > 0 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs flex items-center justify-center">
-              {chat.messages.filter((m) => !m.is_read && m.sender.role === 'admin').length}
-            </span>
-          )}
+          {chat &&
+            chat.messages.filter(m => !m.is_read && m.sender.role === 'admin')
+              .length > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs flex items-center justify-center">
+                {
+                  chat.messages.filter(
+                    m => !m.is_read && m.sender.role === 'admin'
+                  ).length
+                }
+              </span>
+            )}
         </button>
       )}
 
@@ -189,29 +200,33 @@ function ChatWidgetInner({ userId }: { userId: string | number }) {
                     <p>No messages yet. Start the conversation!</p>
                   </div>
                 ) : (
-                  messages.map((msg) => {
-                    const isOwnMessage = msg.sender_id === userId.toString()
+                  messages.map(msg => {
+                    const isAdminMsg = msg.sender?.role === 'admin'
                     return (
                       <div
                         key={msg.id}
-                        className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
+                        className={`flex ${
+                          isAdminMsg ? 'justify-start' : 'justify-end'
+                        }`}
                       >
                         <div
                           className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                            isOwnMessage
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-white text-gray-900 border border-gray-200'
+                            isAdminMsg
+                              ? 'bg-white text-gray-900 border border-gray-200'
+                              : 'bg-blue-600 text-white'
                           }`}
                         >
-                          {!isOwnMessage && (
+                          {isAdminMsg && (
                             <p className="text-xs font-semibold mb-1 opacity-75">
                               {msg.sender.name}
                             </p>
                           )}
-                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                          <p className="text-sm whitespace-pre-wrap">
+                            {msg.content}
+                          </p>
                           <p
                             className={`text-xs mt-1 ${
-                              isOwnMessage ? 'text-blue-100' : 'text-gray-500'
+                              isAdminMsg ? 'text-gray-500' : 'text-blue-100'
                             }`}
                           >
                             {formatTime(msg.created_at)}
@@ -229,7 +244,7 @@ function ChatWidgetInner({ userId }: { userId: string | number }) {
                 <div className="flex gap-2">
                   <textarea
                     value={message}
-                    onChange={(e) => setMessage(e.target.value)}
+                    onChange={e => setMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
                     placeholder="Type your message..."
                     className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
@@ -253,4 +268,3 @@ function ChatWidgetInner({ userId }: { userId: string | number }) {
 }
 
 export default ChatWidget
-

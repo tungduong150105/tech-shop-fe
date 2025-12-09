@@ -8,6 +8,10 @@ import {
   changePassword as changePasswordSvc,
   uploadAvatar as uploadAvatarSvc,
   deleteAvatar as deleteAvatarSvc,
+  resendVerification as resendVerificationSvc,
+  verifyEmail as verifyEmailSvc,
+  forgotPassword as forgotPasswordSvc,
+  resetPassword as resetPasswordSvc,
   type RegisterReq
 } from '../services/authService'
 import type { AuthReq, AuthRes, AuthUser } from '../types/auth'
@@ -79,3 +83,32 @@ export const useDeleteAvatar = () => {
     }
   })
 }
+
+export const useResendVerification = () =>
+  useMutation({
+    mutationFn: (email: string) => resendVerificationSvc(email)
+  })
+
+export const useVerifyEmail = () =>
+  useMutation({
+    mutationFn: ({ email, code }: { email: string; code: string }) =>
+      verifyEmailSvc(email, code)
+  })
+
+export const useForgotPassword = () =>
+  useMutation({
+    mutationFn: (email: string) => forgotPasswordSvc(email)
+  })
+
+export const useResetPassword = () =>
+  useMutation({
+    mutationFn: ({
+      email,
+      code,
+      new_password
+    }: {
+      email: string
+      code: string
+      new_password: string
+    }) => resetPasswordSvc(email, code, new_password)
+  })

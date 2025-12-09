@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSearchProducts } from '../../hooks/useProducts'
+import { makeProductSlug } from '../../utils/productSlug'
 
 // @ts-ignore
 import SearchIcon from '../../../assets/search-icon.svg'
@@ -48,7 +49,8 @@ function Modal({
         id: product.id,
         name: product.name,
         price: product.final_price ?? product.price,
-        thumb: product.img?.[0]
+        thumb: product.img?.[0],
+        slug: makeProductSlug(product.name, product.id)
       })),
     [results]
   )
@@ -181,8 +183,10 @@ const Search = () => {
   }
 
   const handleSelectProduct = (productId: number) => {
+    const found = formattedResults.find(p => p.id === productId)
+    const slug = found ? found.slug : productId
     setIsOpen(false)
-    navigate(`/product/${productId}`)
+    navigate(`/product/${slug}`)
   }
 
   return (

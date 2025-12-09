@@ -3,18 +3,19 @@ import { useParams } from 'react-router-dom'
 import ProductDetail from '../components/products/ProductDetail'
 import { useProductById } from '../hooks/useProducts'
 import { ProductDetailSkeleton } from '../components/common/LoadingSkeleton'
+import { parseProductIdFromSlug } from '../utils/productSlug'
 
 const Detail = () => {
-  const { id } = useParams<{ id: string }>()
-  const productId = id ? parseInt(id) : NaN
+  const { slug } = useParams<{ slug: string }>()
+  const productId = parseProductIdFromSlug(slug)
 
-  const { data: product, isLoading, error } = useProductById(productId)
+  const { data: product, isLoading, error } = useProductById(productId || 0)
 
   if (isLoading) {
     return <ProductDetailSkeleton />
   }
 
-  if (error || !product) {
+  if (!productId || error || !product) {
     return <div>Error loading product details.</div>
   }
 

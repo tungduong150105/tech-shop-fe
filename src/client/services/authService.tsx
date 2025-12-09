@@ -3,7 +3,6 @@ import axiosClient from '../../lib/axios'
 
 export const login = async (payload: AuthReq): Promise<AuthRes> => {
   const { data } = await axiosClient.post<AuthRes>('/auth/login', payload)
-  // store token if returned
   if (data?.data?.accessToken) {
     localStorage.setItem('accessToken', data.data.accessToken)
   }
@@ -31,9 +30,6 @@ export const validateToken = async (): Promise<{ user: AuthUser }> => {
 export type RegisterReq = { name: string; email: string; password: string }
 export const register = async (payload: RegisterReq) => {
   const { data } = await axiosClient.post('/auth/register', payload)
-  if ((data as any)?.data?.accessToken) {
-    localStorage.setItem('accessToken', (data as any).data.accessToken)
-  }
   return data
 }
 
@@ -83,5 +79,35 @@ export const deleteAvatar = async () => {
     message: string
     data: { avatar: null }
   }>('/auth/avatar')
+  return data
+}
+
+export const resendVerification = async (email: string) => {
+  const { data } = await axiosClient.post('/auth/resend-verification', {
+    email
+  })
+  return data
+}
+
+export const verifyEmail = async (email: string, code: string) => {
+  const { data } = await axiosClient.post('/auth/verify-email', { email, code })
+  return data
+}
+
+export const forgotPassword = async (email: string) => {
+  const { data } = await axiosClient.post('/auth/forgot-password', { email })
+  return data
+}
+
+export const resetPassword = async (
+  email: string,
+  code: string,
+  new_password: string
+) => {
+  const { data } = await axiosClient.post('/auth/reset-password', {
+    email,
+    code,
+    new_password
+  })
   return data
 }

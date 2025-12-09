@@ -40,9 +40,9 @@ const ProcessingIcon = () => (
     <path
       d="M22 12C22 17.52 17.52 22 12 22C6.48 22 3.11 16.44 3.11 16.44M3.11 16.44H7.63M3.11 16.44V21.44M2 12C2 6.48 6.44 2 12 2C18.67 2 22 7.56 22 7.56M22 7.56V2.56M22 7.56H17.56"
       stroke="#292D32"
-      stroke-width="1.5"
-      stroke-linecap="round"
-      stroke-linejoin="round"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     />
   </svg>
 )
@@ -124,30 +124,37 @@ const DeliveredIcon = () => (
 const OrderStatus = ({ status }: { status: string }) => {
   const steps = [
     { index: 0, label: 'Order Placed', id: 'placed', icon: <OrderIcon /> },
-    {
-      index: 1,
-      label: 'Processing',
-      id: 'processing',
-      icon: <ProcessingIcon />
-    },
+    { index: 1, label: 'Processing', id: 'processing', icon: <ProcessingIcon /> },
     { index: 2, label: 'On the way', id: 'on-the-way', icon: <DeliveryIcon /> },
     { index: 3, label: 'Delivered', id: 'delivered', icon: <DeliveredIcon /> }
   ]
 
-  const currentStep = steps.filter(step => step.id === status)
+  // Map backend statuses to our step ids
+  const statusMap: Record<string, string> = {
+    pending: 'placed',
+    processing: 'processing',
+    shipped: 'on-the-way',
+    delivering: 'on-the-way',
+    'on-the-way': 'on-the-way',
+    delivered: 'delivered',
+    completed: 'delivered',
+    cancelled: 'placed'
+  }
+
+  const stepId = statusMap[status] || 'placed'
+  const currentStep = steps.find(step => step.id === stepId) || steps[0]
+  const progress = ((currentStep.index + 1) / steps.length) * 100
 
   return (
     <div className="bg-white rounded-lg p-8 mb-6">
       <div className="mb-6 flex flex-col items-center">
         <div className="mb-2">
-          <span className="text-sm font-medium">
-            {25 * (currentStep[0].index + 1)}% Completed
-          </span>
+          <span className="text-sm font-medium">{Math.round(progress)}% Completed</span>
         </div>
-        <div className="h-2 bg-gray-200 rounded-full w-1/2">
+        <div className="h-2 bg-gray-200 rounded-full w-full max-w-xl">
           <div
             className="h-2 bg-orange-500 rounded-full"
-            style={{ width: `${25 * (currentStep[0].index + 1)}%` }}
+            style={{ width: `${progress}%` }}
           ></div>
         </div>
       </div>
@@ -158,17 +165,15 @@ const OrderStatus = ({ status }: { status: string }) => {
           <div key={step.id} className="flex flex-col items-center">
             <div
               className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl mb-2 ${
-                index <= currentStep[0].index
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 text-gray-400'
-              } ${
-                index == currentStep[0].index ? 'animate-pulse scale-125' : ''
-              }`}
+                index <= currentStep.index ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-400'
+              } ${index === currentStep.index ? 'animate-pulse scale-125' : ''}`}
             >
               {step.icon}
             </div>
             <span
-              className={`text-xs ${index <= currentStep[0].index ? 'text-blue-600 font-medium' : 'text-gray-400'}`}
+              className={`text-xs ${
+                index <= currentStep.index ? 'text-blue-600 font-medium' : 'text-gray-400'
+              }`}
             >
               {step.label}
             </span>
@@ -178,7 +183,9 @@ const OrderStatus = ({ status }: { status: string }) => {
 
       <div className="mt-8 text-center">
         <p className="font-light mb-1">
-          Please wait, we are still processing your order.
+          {stepId === 'delivered'
+            ? 'Your order has been delivered.'
+            : 'Please wait, we are still processing your order.'}
         </p>
         <p className="text-sm text-gray-500 font-thin">
           We will notify you for any changes in your order.

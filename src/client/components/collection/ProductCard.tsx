@@ -3,10 +3,11 @@ import { Star } from 'lucide-react'
 import type { Product } from '../../types/product';
 
 interface ProductCardProps {
-  product: Product;
+  product: Product
+  slug?: string
 }
 
-const ProductCard = ({ product } : ProductCardProps) => {
+const ProductCard = ({ product, slug }: ProductCardProps) => {
   const navigate = useNavigate();
 
   // Calculate discount percentage if not provided
@@ -16,7 +17,7 @@ const ProductCard = ({ product } : ProductCardProps) => {
   const hasDiscount = discountPercentage > 0;
 
   return (
-    <div className="bg-white border rounded-lg p-4 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => {navigate(`/product/${product.id}`)}}>
+    <div className="bg-white border rounded-lg p-4 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => {navigate(`/product/${slug || product.id}`)}}>
       <div className="relative mb-4">
         {hasDiscount && (
           <div className="absolute top-2 left-2 bg-orange-200 text-orange-800 text-xs font-semibold px-2 py-1 rounded z-10">

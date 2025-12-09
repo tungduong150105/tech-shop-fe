@@ -8,6 +8,7 @@ import {
   useAdminCategories
 } from '../../hooks'
 import { toast } from 'sonner'
+import ConfirmModal from '../../../client/components/common/ConfirmModal'
 
 export default function AdminFiltersList() {
   const { data, isLoading } = useAdminFilterOptions()
@@ -18,6 +19,7 @@ export default function AdminFiltersList() {
   const [filterKey, setFilterKey] = useState<string>('')
   const [filterCategory, setFilterCategory] = useState<string>('')
   const [filterActive, setFilterActive] = useState<string>('')
+  const [pendingDelete, setPendingDelete] = useState<number | null>(null)
 
   // Ensure filterOptions is always an array
   // data is { data: FilterOptionListResponseWithSuccess }
@@ -71,7 +73,6 @@ export default function AdminFiltersList() {
   }
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this filter option?')) return
     try {
       await del.mutateAsync(id)
       toast.success('Filter option deleted')
@@ -105,6 +106,20 @@ export default function AdminFiltersList() {
           </Link>
         </div>
       </div>
+
+      <ConfirmModal
+        open={pendingDelete !== null}
+        title="Delete filter option?"
+        description="This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmClassName="bg-red-600 hover:bg-red-700"
+        onClose={() => setPendingDelete(null)}
+        onConfirm={() => {
+          if (pendingDelete === null) return
+          handleDelete(pendingDelete).finally(() => setPendingDelete(null))
+        }}
+      />
 
       <div className="bg-white p-4 rounded border grid gap-3">
         <div className="grid grid-cols-4 gap-3">
@@ -153,7 +168,11 @@ export default function AdminFiltersList() {
 
       <div className="bg-white rounded border">
         {isLoading ? (
-          <div className="p-6">Loading...</div>
+          <div className="p-6 space-y-3 animate-pulse">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-10 bg-gray-100 rounded" />
+            ))}
+          </div>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
@@ -183,7 +202,7 @@ export default function AdminFiltersList() {
                     onEdit={() => {
                       window.location.href = `/admin/filters/${opt.id}`
                     }}
-                    onDelete={() => handleDelete(Number(opt.id))}
+                    onDelete={() => setPendingDelete(Number(opt.id))}
                   />
                 ))
               )}

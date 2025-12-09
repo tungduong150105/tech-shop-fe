@@ -1,7 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
-import { useLogin, useRegister, useValidateToken } from '../../hooks/useAuth'
+import {
+  useLogin,
+  useRegister,
+  useValidateToken,
+  useVerifyEmail,
+  useResendVerification,
+  useForgotPassword,
+  useResetPassword
+} from '../../hooks/useAuth'
 import { useQueryClient } from '@tanstack/react-query'
 
 interface AuthModalProps {
@@ -140,9 +148,16 @@ const Login = ({
   onSuccess
 }: AuthModalProps) => {
   const [tab, setTab] = useState<'login' | 'register'>('login')
+  const [mode, setMode] = useState<'login' | 'register' | 'verify' | 'reset'>('login')
   const [fullName, setFullName] = useState<string>('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [verifyEmail, setVerifyEmail] = useState('')
+  const [verifyCode, setVerifyCode] = useState('')
+  const [resetEmail, setResetEmail] = useState('')
+  const [resetCode, setResetCode] = useState('')
+  const [newPassword, setNewPassword] = useState('')
   const [remember, setRemember] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [agreeCondition, setAgreeCondition] = useState(false)
@@ -152,6 +167,10 @@ const Login = ({
 
   const loginMutation = useLogin()
   const registerMutation = useRegister()
+  const verifyMutation = useVerifyEmail()
+  const resendVerifyMutation = useResendVerification()
+  const forgotMutation = useForgotPassword()
+  const resetMutation = useResetPassword()
   const { refetch: refetchUser } = useValidateToken()
 
   useEffect(() => {
@@ -176,6 +195,7 @@ const Login = ({
       setEmail('')
       setPassword('')
       setRemember(false)
+      setMode('login')
       onSuccess?.()
       onClose()
       loginMutation.reset()
@@ -185,29 +205,32 @@ const Login = ({
   // Handle login error
   useEffect(() => {
     if (loginMutation.isError) {
-      toast.error(
+      const msg =
+        (loginMutation.error as any)?.response?.data?.error ||
         loginMutation.error?.message ||
-          'Login failed. Please check your credentials.'
-      )
+        'Login failed. Please check your credentials.'
+      if (msg.toLowerCase().includes('not verified')) {
+        toast.error('Email chưa xác minh. Nhập mã để kích hoạt.')
+        setVerifyEmail(email)
+        setMode('verify')
+      } else {
+        toast.error(msg)
+      }
       loginMutation.reset()
     }
-  }, [loginMutation.isError, loginMutation.error, loginMutation])
+  }, [loginMutation.isError, loginMutation.error, loginMutation, email])
 
   // Handle register success
   useEffect(() => {
     if (registerMutation.isSuccess) {
-      toast.success('Registration successful!')
-      queryClient.invalidateQueries({ queryKey: ['me'] })
-      refetchUser()
-      setFullName('')
-      setEmail('')
-      setPassword('')
+      toast.success('Đăng ký thành công. Kiểm tra email để lấy mã xác minh.')
+      setVerifyEmail(email)
+      setMode('verify')
+      setTab('login')
       setAgreeCondition(false)
-      onSuccess?.()
-      onClose()
       registerMutation.reset()
     }
-  }, [registerMutation.isSuccess, queryClient, refetchUser, onSuccess, onClose])
+  }, [registerMutation.isSuccess, email])
 
   // Handle register error
   useEffect(() => {
@@ -224,7 +247,7 @@ const Login = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (tab === 'login') {
+    if (mode === 'login') {
       if (onLogin) {
         // Use callback if provided (for backward compatibility)
         onLogin(email, password, remember)
@@ -232,9 +255,13 @@ const Login = ({
         // Use hook directly
         loginMutation.mutate({ email, password })
       }
-    } else {
+    } else if (mode === 'register') {
       if (!agreeCondition) {
         toast.error('You must agree to the Terms & Conditions')
+        return
+      }
+      if (password !== confirmPassword) {
+        toast.error('Passwords do not match')
         return
       }
       if (onRegister) {
@@ -248,6 +275,48 @@ const Login = ({
           password
         })
       }
+    } else if (mode === 'verify') {
+      if (!verifyEmail || !verifyCode) {
+        toast.error('Nhập email và mã xác minh')
+        return
+      }
+      verifyMutation.mutate(
+        { email: verifyEmail, code: verifyCode },
+        {
+          onSuccess: () => {
+            toast.success('Xác minh thành công, hãy đăng nhập')
+            setMode('login')
+          },
+          onError: (err: any) => {
+            toast.error(err?.response?.data?.error || 'Xác minh thất bại')
+          }
+        }
+      )
+    } else if (mode === 'reset') {
+      if (!resetEmail) {
+        toast.error('Nhập email để nhận mã')
+        return
+      }
+      if (!resetCode || !newPassword) {
+        toast.error('Nhập mã và mật khẩu mới')
+        return
+      }
+      resetMutation.mutate(
+        { email: resetEmail, code: resetCode, new_password: newPassword },
+        {
+          onSuccess: () => {
+            toast.success('Đổi mật khẩu thành công, hãy đăng nhập')
+            setMode('login')
+            setEmail(resetEmail)
+            setPassword('')
+            setResetCode('')
+            setNewPassword('')
+          },
+          onError: (err: any) => {
+            toast.error(err?.response?.data?.error || 'Đổi mật khẩu thất bại')
+          }
+        }
+      )
     }
   }
 
@@ -271,7 +340,10 @@ const Login = ({
                   ? 'text-blue-600 border-b-2 border-blue-600'
                   : 'text-gray-500 border-b-2 border-gray-500'
               }`}
-              onClick={() => setTab('login')}
+              onClick={() => {
+                setTab('login')
+                setMode('login')
+              }}
             >
               Log in
             </button>
@@ -281,7 +353,10 @@ const Login = ({
                   ? 'text-blue-600 border-b-2 border-blue-600'
                   : 'text-gray-500 border-b-2 border-gray-500'
               }`}
-              onClick={() => setTab('register')}
+              onClick={() => {
+                setTab('register')
+                setMode('register')
+              }}
             >
               Create Account
             </button>
@@ -289,13 +364,17 @@ const Login = ({
 
           <div className="px-8 pb-8">
             <h2 className="text-2xl sm:text-3xl font-normal text-center mt-8">
-              {tab === 'login'
+              {mode === 'login'
                 ? `Log in to ${brand}`
-                : `Create your ${brand} account`}
+                : mode === 'register'
+                  ? `Create your ${brand} account`
+                  : mode === 'verify'
+                    ? 'Xác minh email'
+                    : 'Quên mật khẩu'}
             </h2>
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-              {tab === 'register' && (
+              {mode === 'register' && (
                 <label className="relative block">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                     <ProfileIcon className="w-5 h-5" />
@@ -312,50 +391,167 @@ const Login = ({
               )}
 
               {/* Email */}
-              <label className="relative block">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                  <MailIcon className="w-5 h-5" />
-                </span>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="E-mail"
-                  className="w-full rounded-lg border border-gray-300 pl-10 pr-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </label>
+              {mode !== 'verify' && (
+                <label className="relative block">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <MailIcon className="w-5 h-5" />
+                  </span>
+                  <input
+                    type="email"
+                    required
+                    value={mode === 'reset' ? resetEmail : email}
+                    onChange={e =>
+                      mode === 'reset' ? setResetEmail(e.target.value) : setEmail(e.target.value)
+                    }
+                    placeholder="E-mail"
+                    className="w-full rounded-lg border border-gray-300 pl-10 pr-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </label>
+              )}
 
               {/* Password */}
-              <label className="relative block">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                  <LockIcon className="w-5 h-5" />
-                </span>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  {...(tab === 'register' && { minLength: 8 })}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="Password"
-                  className="w-full rounded-lg border border-gray-300 pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(s => !s)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? (
-                    <EyeOffIcon className="w-5 h-5" />
-                  ) : (
-                    <EyeIcon className="w-5 h-5" />
-                  )}
-                </button>
-              </label>
+              {(mode === 'login' || mode === 'register') && (
+                <label className="relative block">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <LockIcon className="w-5 h-5" />
+                  </span>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    {...(mode === 'register' && { minLength: 8 })}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="Password"
+                    className="w-full rounded-lg border border-gray-300 pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(s => !s)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? (
+                      <EyeOffIcon className="w-5 h-5" />
+                    ) : (
+                      <EyeIcon className="w-5 h-5" />
+                    )}
+                  </button>
+                </label>
+              )}
+
+              {/* Confirm password */}
+              {mode === 'register' && (
+                <label className="relative block">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <LockIcon className="w-5 h-5" />
+                  </span>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    minLength={8}
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm Password"
+                    className="w-full rounded-lg border border-gray-300 pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </label>
+              )}
+
+              {/* Verify form */}
+              {mode === 'verify' && (
+                <>
+                  <label className="relative block">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                      <MailIcon className="w-5 h-5" />
+                    </span>
+                    <input
+                      type="email"
+                      required
+                      value={verifyEmail}
+                      onChange={e => setVerifyEmail(e.target.value)}
+                      placeholder="Email cần xác minh"
+                      className="w-full rounded-lg border border-gray-300 pl-10 pr-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </label>
+                  <label className="block">
+                    <input
+                      type="text"
+                      required
+                      value={verifyCode}
+                      onChange={e => setVerifyCode(e.target.value)}
+                      placeholder="Nhập mã 6 số"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </label>
+                  <div className="flex items-center gap-2 text-sm">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!verifyEmail) {
+                          toast.error('Nhập email để gửi lại mã')
+                          return
+                        }
+                        resendVerifyMutation.mutate(verifyEmail, {
+                          onSuccess: () => toast.success('Đã gửi lại mã xác minh'),
+                          onError: (err: any) =>
+                            toast.error(err?.response?.data?.error || 'Gửi mã thất bại')
+                        })
+                      }}
+                      className="text-blue-600 hover:underline"
+                    >
+                      Gửi lại mã
+                    </button>
+                    {resendVerifyMutation.isPending && (
+                      <span className="text-xs text-gray-500">Đang gửi...</span>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* Reset password form */}
+              {mode === 'reset' && (
+                <>
+                  <label className="block">
+                    <input
+                      type="text"
+                      value={resetCode}
+                      onChange={e => setResetCode(e.target.value)}
+                      placeholder="Mã reset đã gửi email"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </label>
+                  <label className="block">
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                      placeholder="Mật khẩu mới (>=6)"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      minLength={6}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!resetEmail) {
+                        toast.error('Nhập email trước')
+                        return
+                      }
+                      forgotMutation.mutate(resetEmail, {
+                        onSuccess: () => toast.success('Đã gửi mã đặt lại mật khẩu'),
+                        onError: (err: any) =>
+                          toast.error(err?.response?.data?.error || 'Gửi mã thất bại')
+                      })
+                    }}
+                    className="text-blue-600 hover:underline text-sm"
+                  >
+                    Gửi mã đặt lại mật khẩu
+                  </button>
+                </>
+              )}
 
               {/* Remember + Forgot */}
-              {tab === 'login' && (
+              {mode === 'login' && (
                 <div className="flex items-center justify-between text-sm">
                   <label className="inline-flex items-center gap-2">
                     <input
@@ -368,7 +564,10 @@ const Login = ({
                   </label>
                   <button
                     type="button"
-                    onClick={onForgotPassword}
+                    onClick={() => {
+                      setResetEmail(email)
+                      setMode('reset')
+                    }}
                     className="text-blue-600 hover:underline"
                   >
                     Forgot Password ?
@@ -376,7 +575,7 @@ const Login = ({
                 </div>
               )}
 
-              {tab === 'register' && (
+              {mode === 'register' && (
                 <div className="flex items-center justify-between text-sm">
                   <label className="inline-flex items-center gap-2">
                     <input
@@ -397,54 +596,42 @@ const Login = ({
               <button
                 type="submit"
                 disabled={
-                  tab === 'login'
+                  mode === 'login'
                     ? loginMutation.isPending
-                    : registerMutation.isPending
+                    : mode === 'register'
+                      ? registerMutation.isPending
+                      : mode === 'verify'
+                        ? verifyMutation.isPending
+                        : resetMutation.isPending
                 }
-                className="w-full bg-blue-600 text-white rounded-lg py-3 text-sm font-light hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-blue-600 text-white rounded-lg py-3 text-sm font-light hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {tab === 'login'
-                  ? loginMutation.isPending
-                    ? 'Logging in...'
-                    : 'Log In'
-                  : registerMutation.isPending
-                  ? 'Creating Account...'
-                  : 'Create Account'}
+                {(mode === 'login' && loginMutation.isPending) ||
+                (mode === 'register' && registerMutation.isPending) ||
+                (mode === 'verify' && verifyMutation.isPending) ||
+                (mode === 'reset' && resetMutation.isPending) ? (
+                  <span className="w-5 h-5 border-2 border-white/60 border-t-transparent rounded-full animate-spin" />
+                ) : null}
+                {mode === 'login'
+                  ? 'Log in'
+                  : mode === 'register'
+                    ? 'Create Account'
+                    : mode === 'verify'
+                      ? 'Verify Email'
+                      : 'Reset Password'}
               </button>
-
-              {/* Divider */}
-              <div className="flex items-center gap-4">
-                <div className="h-px bg-gray-200 flex-1" />
-                <span className="text-xs text-gray-500">Or Log In with</span>
-                <div className="h-px bg-gray-200 flex-1" />
-              </div>
-
-              {/* Social buttons */}
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={onLoginWithGoogle}
-                  className="inline-flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-2 text-sm hover:bg-gray-50"
-                >
-                  <span className="text-blue-600 font-bold">G</span> Google
-                </button>
-                <button
-                  type="button"
-                  onClick={onLoginWithFacebook}
-                  className="inline-flex items-center justify-center gap-2 border border-gray-300 rounded-lg py-2 text-sm hover:bg-gray-50"
-                >
-                  <span className="text-blue-700 font-bold">f</span> Facebook
-                </button>
-              </div>
 
               {/* Footer */}
               <p className="text-center text-sm text-gray-500">
-                {tab === 'login' ? (
+                {mode === 'login' ? (
                   <>
                     Don’t have an account ?
                     <button
                       type="button"
-                      onClick={() => setTab('register')}
+                      onClick={() => {
+                        setTab('register')
+                        setMode('register')
+                      }}
                       className="text-blue-600 ml-1 hover:underline"
                     >
                       sign up
@@ -455,7 +642,10 @@ const Login = ({
                     Already have an account ?
                     <button
                       type="button"
-                      onClick={() => setTab('login')}
+                      onClick={() => {
+                        setTab('login')
+                        setMode('login')
+                      }}
                       className="text-blue-600 ml-1 hover:underline"
                     >
                       log in

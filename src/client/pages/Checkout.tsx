@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import {
   Truck,
   CreditCard,
@@ -13,16 +13,19 @@ import {
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useCart, useClearCart } from '../hooks/useCart'
+import { useValidateToken } from '../hooks/useAuth'
 import { createOrder } from '../services/orderService'
 import { toast } from 'sonner'
 import {
   createBankTransferQR,
   type BankTransferQRResponse
 } from '../services/paymentService'
+import { validateCoupon } from '../services/couponService'
 
 const Checkout = () => {
   const navigate = useNavigate()
   const { data: cartData, isLoading } = useCart()
+  const { data: userData } = useValidateToken()
   const cart = cartData?.cart
   const items = cart?.items || []
   const [address, setAddress] = useState('')
@@ -32,6 +35,13 @@ const Checkout = () => {
   const [processing, setProcessing] = useState(false)
   const [qrData, setQrData] = useState<BankTransferQRResponse | null>(null)
   const [showQRModal, setShowQRModal] = useState(false)
+  const [couponInput, setCouponInput] = useState('')
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null)
+  const [couponResult, setCouponResult] = useState<{
+    discount: number
+    finalAmount: number
+  } | null>(null)
+  const [couponLoading, setCouponLoading] = useState(false)
   const clearCartMutation = useClearCart()
 
   const totals = useMemo(() => {
@@ -42,7 +52,22 @@ const Checkout = () => {
     return { subtotal, discount, shipmentCost, grandTotal }
   }, [cart])
 
+  // Autofill receiver info from logged-in user
+  useEffect(() => {
+    const u = userData?.user
+    if (u) {
+      if (!name && u.name) setName(u.name)
+      if (!phone && u.phone) setPhone(u.phone)
+      if (!address && u.address) setAddress(u.address)
+    }
+  }, [userData?.user, name, phone, address])
+
   const createOrderFromCart = async (paymentMethod: string) => {
+    const token = localStorage.getItem('accessToken')
+    if (!token) {
+      throw new Error('NOT_AUTHENTICATED')
+    }
+
     const orderItems = items.map(item => ({
       product_id: item.product_id,
       quantity: item.quantity,
@@ -56,7 +81,8 @@ const Checkout = () => {
         phone,
         address
       },
-      payment_method: paymentMethod
+      payment_method: paymentMethod,
+      coupon_code: appliedCoupon || undefined
     }
 
     const result = await createOrder(orderPayload)
@@ -71,6 +97,8 @@ const Checkout = () => {
     return result.order
   }
 
+  const displayTotal = couponResult?.finalAmount ?? totals.grandTotal
+
   const handlePay = async () => {
     if (!items.length) {
       toast.error('Cart is empty')
@@ -81,16 +109,26 @@ const Checkout = () => {
       return
     }
 
+    const token = localStorage.getItem('accessToken')
+    if (!token) {
+      toast.error('Please login to place an order')
+      return
+    }
+
     if (paymentMethod === 'cod') {
       try {
         setProcessing(true)
         const order = await createOrderFromCart('cod')
         toast.success('Order placed successfully - Pay on delivery')
         navigate(
-          `/payment-result?vnp_ResponseCode=00&vnp_TxnRef=${order.order_number}`
+          `/payment-result?method=cod&order=${order.order_number}&amount=${displayTotal}`
         )
       } catch (err: any) {
-        toast.error(err?.response?.data?.message || 'Failed to create order')
+        if (err?.message === 'NOT_AUTHENTICATED') {
+          toast.error('Please login to place an order')
+        } else {
+          toast.error(err?.response?.data?.message || 'Failed to create order')
+        }
       } finally {
         setProcessing(false)
       }
@@ -101,7 +139,7 @@ const Checkout = () => {
     try {
       setProcessing(true)
       const data = await createBankTransferQR({
-        amount: totals.grandTotal,
+        amount: displayTotal,
         orderInfo: `Thanh toan don hang - ${name} - ${phone}`,
         accountName: name
       })
@@ -128,13 +166,41 @@ const Checkout = () => {
         'Order created successfully. Please complete the bank transfer.'
       )
       navigate(
-        `/payment-result?vnp_ResponseCode=00&vnp_TxnRef=${order.order_number}`
+        `/payment-result?method=bank_transfer&order=${order.order_number}&amount=${displayTotal}`
       )
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Failed to create order')
+      if (err?.message === 'NOT_AUTHENTICATED') {
+        toast.error('Please login to place an order')
+      } else {
+        toast.error(err?.response?.data?.message || 'Failed to create order')
+      }
     } finally {
       setProcessing(false)
     }
+  }
+
+  const handleApplyCoupon = () => {
+    const code = couponInput.trim()
+    if (!code) {
+      toast.error('Please enter a voucher code')
+      return
+    }
+    setCouponLoading(true)
+    validateCoupon(code, totals.grandTotal)
+      .then(res => {
+        setAppliedCoupon(code)
+        setCouponResult({
+          discount: res.discount,
+          finalAmount: res.finalAmount
+        })
+        toast.success('Voucher applied')
+      })
+      .catch(err => {
+        toast.error(err?.response?.data?.message || 'Invalid voucher')
+        setAppliedCoupon(null)
+        setCouponResult(null)
+      })
+      .finally(() => setCouponLoading(false))
   }
 
   if (isLoading) {
@@ -325,6 +391,41 @@ const Checkout = () => {
               </div>
             ))}
           </div>
+          <div className="mt-4 mb-2 bg-gray-50 p-3 rounded-lg space-y-2">
+            <div className="flex items-center gap-2">
+              <input
+                value={couponInput}
+                onChange={e => setCouponInput(e.target.value)}
+                placeholder="Enter voucher code"
+                className="flex-1 border rounded px-3 py-2 text-sm"
+              />
+              <button
+                type="button"
+                onClick={handleApplyCoupon}
+                className="px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Apply
+              </button>
+            </div>
+            {appliedCoupon && (
+              <div className="text-sm text-green-700 flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                Applied: <span className="font-medium">{appliedCoupon}</span>
+                {couponResult && (
+                  <span className="text-xs text-gray-600">
+                    (−{couponResult.discount.toLocaleString('vi-VN')} ₫)
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setAppliedCoupon(null)}
+                  className="text-xs text-red-600 underline"
+                >
+                  Remove
+                </button>
+              </div>
+            )}
+          </div>
           <div className="border-t mt-4 pt-4 space-y-2 text-sm text-gray-600">
             <div className="flex justify-between">
               <span>Subtotal</span>
@@ -336,13 +437,19 @@ const Checkout = () => {
                 <span>-{totals.discount.toLocaleString('vi-VN')} ₫</span>
               </div>
             )}
+            {couponResult && couponResult.discount > 0 && (
+              <div className="flex justify-between text-green-700">
+                <span>Voucher</span>
+                <span>-{couponResult.discount.toLocaleString('vi-VN')} ₫</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span>Shipment</span>
               <span>{totals.shipmentCost.toLocaleString('vi-VN')} ₫</span>
             </div>
             <div className="flex justify-between font-semibold text-gray-900 pt-2 border-t">
               <span>Total</span>
-              <span>{totals.grandTotal.toLocaleString('vi-VN')} ₫</span>
+              <span>{displayTotal.toLocaleString('vi-VN')} ₫</span>
             </div>
           </div>
         </div>

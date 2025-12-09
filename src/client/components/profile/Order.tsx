@@ -1,119 +1,78 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import EmptyState from './EmptyStatus'
 import OrderStatus from './OrderStatus'
 import OrderDetails from './OrderDetail'
 import OrderCard from './OrderCard'
-
-interface Product {
-  name: string
-  image?: string
-  color?: string
-  quantity?: number
-  price?: number
-  originalPrice?: number
-}
-
-interface Order {
-  id: string
-  placedOn: string
-  total: number
-  delivered?: string
-  sentTo: string
-  address?: string
-  products: Product[]
-  status?: 'processing' | 'on-the-way' | 'delivered'
-  paymentType?: string
-  transactionId?: string
-  amountPaid?: number
-}
-
-const mockOrders: Order[] = [
-  {
-    id: '8967856',
-    placedOn: '2023/08/20',
-    total: 10998.0,
-    delivered: '2023/08/22',
-    sentTo: 'Jimmy Smith',
-    products: [
-      { name: 'iMac', image: '🖥️' },
-      { name: 'iPad Pro', image: '📱' },
-      { name: 'AirPods', image: '🎧' },
-      { name: 'iPhone', image: '📱' },
-      { name: 'Apple Watch', image: '⌚' },
-      { name: 'Headphones', image: '🎧' }
-    ]
-  },
-  {
-    id: '3615950',
-    placedOn: '2023/06/30',
-    total: 5643.32,
-    delivered: '2023/07/05',
-    sentTo: 'Jimmy Smith',
-    address: '31,Albuquerque, New York',
-    products: [
-      { name: 'Phone Case', image: '📱' },
-      { name: 'Apple Watch', image: '⌚' },
-      { name: 'Keyboard', image: '⌨️' },
-      { name: 'PS5', image: '🎮' },
-      { name: 'Headphones', image: '🎧' }
-    ]
-  },
-  {
-    id: '1050486',
-    placedOn: '2023/04/15',
-    total: 543.02,
-    sentTo: 'Jimmy Smith',
-    address: '31,Albuquerque,New York',
-    status: 'processing',
-    paymentType: 'Net Banking',
-    transactionId: '2345678910',
-    amountPaid: 543.02,
-    products: [
-      {
-        name: 'MacBook Pro M2 MNEJ3 2022 LLA 13.3 inch',
-        color: 'Black',
-        quantity: 1,
-        price: 433.0,
-        originalPrice: 1299.0
-      },
-      {
-        name: 'Inateck 12.3-13 Inch Laptop Case Sleeve 360° Protection',
-        color: 'Blue',
-        quantity: 1,
-        price: 63.26
-      },
-      {
-        name: 'Laptop Privacy Screen for 13 inch MacBook Pro & MacBook Air',
-        color: 'Black',
-        quantity: 1,
-        price: 23.26
-      }
-    ]
-  }
-]
+import { useUserOrders } from '../../hooks/useUserOrders'
+import { cancelMyOrder } from '../../services/orderService'
+import { toast } from 'sonner'
 
 const Order = () => {
+  const ordersQuery = useUserOrders()
+  const orders = ordersQuery.data
+  const isLoading = ordersQuery.isLoading
   const [view, setView] = useState<'list' | 'detail' | 'empty'>('list')
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [selectedOrder, setSelectedOrder] = useState<any | null>(null)
   const [orderTab, setOrderTab] = useState<
     'current' | 'delivered' | 'canceled' | 'returned'
-  >('delivered')
+  >('current')
+  const [cancelling, setCancelling] = useState(false)
 
-  const handleOrderClick = (order: Order) => {
+  const mappedOrders = useMemo(() => {
+    if (!orders) return []
+    return orders.map(o => ({
+      id: o.id, // numeric id for API actions
+      orderNumber: o.order_number || `#${o.id}`,
+      placedOn: o.created_at ? new Date(o.created_at).toLocaleDateString() : '',
+      total: Number(o.total_amount || 0),
+      delivered: o.status === 'delivered' ? 'Delivered' : undefined,
+      sentTo: o.shipping_address?.name || 'You',
+      address: o.shipping_address?.address,
+      status: o.status as any,
+      paymentType: o.payment_method || undefined,
+      transactionId: o.id ? `#${o.id}` : '',
+      amountPaid: Number(o.total_amount || 0),
+      products: (o.order_items || []).map(oi => ({
+        name: oi.product?.name || 'Product',
+        quantity: oi.quantity,
+        price: oi.unit_price,
+        image:
+          (Array.isArray(oi.product?.img) && oi.product?.img?.[0]) ||
+          oi.product?.image_url ||
+          'https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'
+      }))
+    }))
+  }, [orders])
+
+  const filteredOrders = useMemo(() => {
+    if (!mappedOrders.length) return []
+    if (orderTab === 'delivered') return mappedOrders.filter(o => o.status === 'delivered')
+    if (orderTab === 'canceled') return mappedOrders.filter(o => o.status === 'cancelled')
+    if (orderTab === 'current')
+      return mappedOrders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled')
+    return []
+  }, [mappedOrders, orderTab])
+
+  const handleOrderClick = (order: any) => {
     setSelectedOrder(order)
     setView('detail')
   }
 
-  const getFilteredOrders = () => {
-    if (orderTab === 'delivered') {
-      return mockOrders.filter(o => o.delivered)
-    } else if (orderTab === 'current') {
-      return mockOrders.filter(o => !o.delivered)
+  const handleCancel = async () => {
+    if (!selectedOrder) return
+    try {
+      setCancelling(true)
+      await cancelMyOrder(selectedOrder.id)
+      toast.success('Order cancelled')
+      setView('list')
+      setSelectedOrder(null)
+      ordersQuery.refetch()
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to cancel order')
+    } finally {
+      setCancelling(false)
     }
-    return []
   }
-
-  const filteredOrders = getFilteredOrders()
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -123,11 +82,29 @@ const Order = () => {
             <h1 className="text-3xl font-bold mb-2">Order History</h1>
             <p className="text-gray-500">Track, return or purchase items</p>
           </div>
-          {view === 'detail' && selectedOrder ? (
+          {isLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-16 bg-gray-200 rounded animate-pulse" />
+              ))}
+            </div>
+          ) : view === 'detail' && selectedOrder ? (
             <>
               {selectedOrder.status && (
                 <OrderStatus status={selectedOrder.status} />
               )}
+              <div className="flex justify-end mb-4">
+                {selectedOrder.status !== 'delivered' &&
+                  selectedOrder.status !== 'cancelled' && (
+                    <button
+                      onClick={handleCancel}
+                      disabled={cancelling}
+                      className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-60"
+                    >
+                      {cancelling ? 'Cancelling...' : 'Cancel Order'}
+                    </button>
+                  )}
+              </div>
               <OrderDetails order={selectedOrder} />
             </>
           ) : (
@@ -137,14 +114,20 @@ const Order = () => {
                   {
                     key: 'current',
                     label: 'Current',
-                    count: mockOrders.filter(o => !o.delivered).length
+                    count: mappedOrders.filter(
+                      o => o.status !== 'delivered' && o.status !== 'cancelled'
+                    ).length
                   },
                   {
                     key: 'delivered',
                     label: 'Delivered',
-                    count: mockOrders.filter(o => o.delivered).length
+                    count: mappedOrders.filter(o => o.status === 'delivered').length
                   },
-                  { key: 'canceled', label: 'Canceled', count: 0 },
+                  {
+                    key: 'canceled',
+                    label: 'Canceled',
+                    count: mappedOrders.filter(o => o.status === 'cancelled').length
+                  },
                   { key: 'returned', label: 'Returned', count: 0 }
                 ].map(tab => (
                   <button
@@ -172,18 +155,15 @@ const Order = () => {
                 ))}
               </div>
 
-              {view === 'empty' ? (
+              {view === 'empty' || filteredOrders.length === 0 ? (
                 <EmptyState />
               ) : (
                 <div>
                   {filteredOrders.map(order => (
                     <OrderCard
+                      key={order.id}
                       order={order}
-                      onClick={
-                        orderTab === 'current'
-                          ? () => handleOrderClick(order)
-                          : undefined
-                      }
+                      onClick={() => handleOrderClick(order)}
                     />
                   ))}
                 </div>

@@ -38,8 +38,15 @@ export const useAddToCart = () => {
 export const useUpdateCartQuantity = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ productId, quantity }: { productId: number; quantity: number }) =>
-      updateQtySvc(productId, quantity),
+    mutationFn: ({
+      productId,
+      quantity,
+      cartItemId,
+    }: {
+      productId: number
+      quantity: number
+      cartItemId?: number
+    }) => updateQtySvc(productId, quantity, cartItemId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['cart'] })
   })
 }
@@ -47,7 +54,8 @@ export const useUpdateCartQuantity = () => {
 export const useRemoveCartItem = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (productId: number) => removeItemSvc(productId),
+    mutationFn: ({ productId, cartItemId }: { productId: number; cartItemId?: number }) =>
+      removeItemSvc(productId, cartItemId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['cart'] })
   })
 }

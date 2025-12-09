@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Edit3, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 import {
   useAdminCoupons,
   useCreateAdminCoupon,
@@ -10,6 +11,7 @@ import {
 import Modal from '../../components/common/Modal'
 import SkeletonTable from '../../components/common/SkeletonTable'
 import { DiscountType, UpdateCouponRequest } from '../../types'
+import ConfirmModal from '../../../client/components/common/ConfirmModal'
 
 export default function AdminCouponsList() {
   const navigate = useNavigate()
@@ -28,12 +30,31 @@ export default function AdminCouponsList() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Coupons</h1>
         <button
-          className="px-3 py-2 bg-green-600 text-white rounded"
+          className="px-3 py-2 bg-green-600 text-white rounded disabled:opacity-60"
           onClick={() => navigate('/admin/coupons/new')}
+          disabled={createMut.isPending}
         >
           New Coupon
         </button>
       </div>
+
+      <ConfirmModal
+        open={confirmId !== null}
+        title="Delete coupon?"
+        description="This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmClassName="bg-red-600 hover:bg-red-700"
+        onClose={() => setConfirmId(null)}
+        onConfirm={() => {
+          if (confirmId === null) return
+          del.mutate(confirmId, {
+            onSuccess: () => toast.success('Coupon deleted'),
+            onError: () => toast.error('Failed to delete coupon'),
+            onSettled: () => setConfirmId(null)
+          })
+        }}
+      />
 
       <div className="bg-white rounded border">
         {isLoading ? (
@@ -95,15 +116,17 @@ export default function AdminCouponsList() {
             <button
               className="px-3 py-2 border rounded"
               onClick={() => setCreateOpen(false)}
+              disabled={createMut.isPending}
             >
               Cancel
             </button>
             <button
               form="createCouponForm"
               type="submit"
-              className="px-3 py-2 bg-green-600 text-white rounded"
+              className="px-3 py-2 bg-green-600 text-white rounded disabled:opacity-60"
+              disabled={createMut.isPending}
             >
-              Create
+              {createMut.isPending ? 'Creating...' : 'Create'}
             </button>
           </>
         }
@@ -114,24 +137,29 @@ export default function AdminCouponsList() {
           onSubmit={async e => {
             e.preventDefault()
             const fd = new FormData(e.currentTarget as HTMLFormElement)
-            await createMut.mutateAsync({
-              code: String(fd.get('code') || ''),
-              description: String(fd.get('description') || '') || undefined,
-              discount_type: String(
-                fd.get('discount_type') || 'percent'
-              ) as DiscountType,
-              discount_value: Number(fd.get('discount_value') || 0),
-              min_order: fd.get('min_order')
-                ? Number(fd.get('min_order'))
-                : undefined,
-              usage_limit: fd.get('usage_limit')
-                ? Number(fd.get('usage_limit'))
-                : undefined,
-              expires_at: fd.get('expires_at')
-                ? String(fd.get('expires_at'))
-                : undefined
-            })
-            setCreateOpen(false)
+            try {
+              await createMut.mutateAsync({
+                code: String(fd.get('code') || ''),
+                description: String(fd.get('description') || '') || undefined,
+                discount_type: String(
+                  fd.get('discount_type') || 'percent'
+                ) as DiscountType,
+                discount_value: Number(fd.get('discount_value') || 0),
+                min_order: fd.get('min_order')
+                  ? Number(fd.get('min_order'))
+                  : undefined,
+                usage_limit: fd.get('usage_limit')
+                  ? Number(fd.get('usage_limit'))
+                  : undefined,
+                expires_at: fd.get('expires_at')
+                  ? String(fd.get('expires_at'))
+                  : undefined
+              })
+              toast.success('Coupon created')
+              setCreateOpen(false)
+            } catch (err) {
+              toast.error('Failed to create coupon')
+            }
           }}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -218,15 +246,17 @@ export default function AdminCouponsList() {
             <button
               className="px-3 py-2 border rounded"
               onClick={() => setEditOpen(null)}
+              disabled={updateMut.isPending}
             >
               Cancel
             </button>
             <button
               form="editCouponForm"
               type="submit"
-              className="px-3 py-2 bg-green-600 text-white rounded"
+              className="px-3 py-2 bg-green-600 text-white rounded disabled:opacity-60"
+              disabled={updateMut.isPending}
             >
-              Save
+              {updateMut.isPending ? 'Saving...' : 'Save'}
             </button>
           </>
         }
@@ -236,6 +266,7 @@ export default function AdminCouponsList() {
           className="space-y-3"
           onSubmit={async e => {
             e.preventDefault()
+            if (!editOpen) return
             const fd = new FormData(e.currentTarget as HTMLFormElement)
             const payload: UpdateCouponRequest = {
               code: fd.get('code') ? String(fd.get('code')) : undefined,
@@ -258,8 +289,13 @@ export default function AdminCouponsList() {
                 ? String(fd.get('expires_at'))
                 : undefined
             }
-            await updateMut.mutateAsync(payload)
-            setEditOpen(null)
+            try {
+              await updateMut.mutateAsync(payload)
+              toast.success('Coupon updated')
+              setEditOpen(null)
+            } catch (err) {
+              toast.error('Failed to update coupon')
+            }
           }}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

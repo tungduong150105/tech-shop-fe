@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Heart, ShoppingCart, Zap } from 'lucide-react'
 import { toast } from 'sonner'
@@ -10,9 +10,9 @@ interface ProductProps {
   discount: number
   price: number
   selectedColor: string
-  colors: { name: string; code: string }[]
+  colors: { name: string; code: string; quantity?: number }[]
   id: number
-  quantity: number
+  quantity: number // total (fallback)
 }
 
 const Payment = ({ discount, price, selectedColor, colors, id, quantity }: ProductProps) => {
@@ -26,9 +26,15 @@ const Payment = ({ discount, price, selectedColor, colors, id, quantity }: Produ
   const isInWishlist = wishlistData?.items?.some(item => item.product.id === id.toString()) || false
   const finalPrice = Number(((price * (100 - discount)) / 100).toFixed(2))
 
+  const selectedColorObj = useMemo(
+    () => colors.find(c => c.name === selectedColor) || (colors.length ? colors[0] : undefined),
+    [colors, selectedColor]
+  )
+  const selectedQty = selectedColorObj?.quantity ?? quantity
+
   const handleAddToCart = () => {
-    if (quantity <= 0) {
-      toast.error('Product is out of stock')
+    if (selectedQty <= 0) {
+      toast.error('Selected color is out of stock')
       return
     }
 
@@ -38,12 +44,7 @@ const Payment = ({ discount, price, selectedColor, colors, id, quantity }: Produ
       return
     }
 
-    const colorObj = colors.find(c => c.name === selectedColor) || {
-      name: selectedColor || 'Default',
-      code: ''
-    }
-
-    const colorPayload = colorObj && colorObj.name ? colorObj : null
+    const colorPayload = selectedColorObj && selectedColorObj.name ? selectedColorObj : null
 
     addToCartMutation.mutate(
       {
@@ -71,8 +72,8 @@ const Payment = ({ discount, price, selectedColor, colors, id, quantity }: Produ
   }
 
   const handleBuyNow = async () => {
-    if (quantity <= 0) {
-      toast.error('Product is out of stock')
+    if (selectedQty <= 0) {
+      toast.error('Selected color is out of stock')
       return
     }
 
@@ -82,12 +83,7 @@ const Payment = ({ discount, price, selectedColor, colors, id, quantity }: Produ
       return
     }
 
-    const colorObj = colors.find(c => c.name === selectedColor) || {
-      name: selectedColor || 'Default',
-      code: ''
-    }
-
-    const colorPayload = colorObj && colorObj.name ? colorObj : null
+    const colorPayload = selectedColorObj && selectedColorObj.name ? selectedColorObj : null
 
     // Add to cart first, then navigate to checkout
     addToCartMutation.mutate(

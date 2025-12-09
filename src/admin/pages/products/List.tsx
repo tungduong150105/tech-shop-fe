@@ -2,11 +2,14 @@ import { Link } from 'react-router-dom'
 import { useState, useMemo } from 'react'
 import { useAdminProducts, useDeleteAdminProduct } from '../../hooks'
 import { Edit3, Trash2, MessageSquare } from 'lucide-react'
+import { toast } from 'sonner'
+import ConfirmModal from '../../../client/components/common/ConfirmModal'
 
 export default function AdminProductsList() {
   const { data, isLoading } = useAdminProducts({ page: 1, limit: 20 })
   const del = useDeleteAdminProduct()
   const [query, setQuery] = useState('')
+  const [pendingDelete, setPendingDelete] = useState<number | null>(null)
 
   const products = data?.data.products ?? []
   const filtered = useMemo(() => {
@@ -39,8 +42,31 @@ export default function AdminProductsList() {
           </Link>
         </div>
       </div>
+      <ConfirmModal
+        open={pendingDelete !== null}
+        title="Delete product?"
+        description="This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmClassName="bg-red-600 hover:bg-red-700"
+        onClose={() => setPendingDelete(null)}
+        onConfirm={() => {
+          if (pendingDelete === null) return
+          del.mutate(pendingDelete, {
+            onSuccess: () => toast.success('Product deleted'),
+            onError: () => toast.error('Failed to delete product'),
+            onSettled: () => setPendingDelete(null)
+          })
+        }}
+      />
       {isLoading ? (
-        <div>Loading...</div>
+        <div className="bg-white rounded border p-6">
+          <div className="animate-pulse space-y-3">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-10 bg-gray-100 rounded" />
+            ))}
+          </div>
+        </div>
       ) : (
         <div className="bg-white rounded border">
           <table className="w-full text-sm">
@@ -67,13 +93,25 @@ export default function AdminProductsList() {
                   <td className="p-2">{p.id}</td>
                   <td className="p-2">{p.name}</td>
                   <td className="p-2">${p.price}</td>
-                  <td className="p-2">{p.quantity ?? 0}</td>
+                  <td className="p-2">
+                    {Array.isArray(p.available_colors) && p.available_colors.length > 0
+                      ? p.available_colors.reduce(
+                          (sum, c) => sum + Number(c.quantity || 0),
+                          0
+                        )
+                      : p.quantity ?? 0}
+                  </td>
                   <td className="p-2">
                     <div className="flex items-center gap-2">
                       <Link to={`/admin/products/${p.id}`} title="Edit" className="text-blue-600">
                         <Edit3 size={16} />
                       </Link>
-                      <button title="Delete" className="text-red-600" onClick={() => del.mutateAsync(p.id)}>
+                      <button
+                        title="Delete"
+                        className="text-red-600"
+                        onClick={() => setPendingDelete(p.id)}
+                        disabled={del.isPending}
+                      >
                         <Trash2 size={16} />
                       </button>
                       <Link to={`/admin/products/${p.id}/reviews`} title="Reviews" className="text-gray-600">

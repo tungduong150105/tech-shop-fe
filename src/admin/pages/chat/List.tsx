@@ -5,7 +5,7 @@ import { useValidateToken } from '../../../client/hooks/useAuth'
 import { toast } from 'sonner'
 import { io, Socket } from 'socket.io-client'
 
-const AdminChatList = () => {
+export default function AdminChatList() {
   const [selectedChatId, setSelectedChatId] = useState<number | null>(null)
   const [message, setMessage] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
@@ -13,8 +13,8 @@ const AdminChatList = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const { data: userData } = useValidateToken()
-  const { data: chatsData, refetch: refetchChats } = useAllChats(1, 50, statusFilter || undefined)
-  const { data: chatData, refetch: refetchChat } = useChatById(selectedChatId || 0)
+  const { data: chatsData, refetch: refetchChats, isLoading: chatsLoading } = useAllChats(1, 50, statusFilter || undefined)
+  const { data: chatData, refetch: refetchChat, isLoading: chatLoading } = useChatById(selectedChatId || 0)
   const sendMessageMutation = useSendMessage()
   const updateStatusMutation = useUpdateChatStatus()
   const markAsReadMutation = useMarkMessagesAsRead()
@@ -188,7 +188,13 @@ const AdminChatList = () => {
           </div>
         </div>
         <div className="flex-1 overflow-y-auto">
-          {chats.length === 0 ? (
+          {chatsLoading ? (
+            <div className="p-4 space-y-3">
+              {[1,2,3,4].map(i => (
+                <div key={i} className="h-16 bg-gray-100 rounded animate-pulse" />
+              ))}
+            </div>
+          ) : chats.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
               <MessageCircle className="w-12 h-12 mx-auto mb-2 text-gray-300" />
               <p>No chats found</p>
@@ -236,7 +242,13 @@ const AdminChatList = () => {
 
       {/* Chat Window */}
       <div className="flex-1 bg-white rounded-lg border border-gray-200 flex flex-col">
-        {selectedChat ? (
+        {chatLoading ? (
+          <div className="p-6 space-y-3">
+            {[1,2,3].map(i => (
+              <div key={i} className="h-10 bg-gray-100 rounded animate-pulse" />
+            ))}
+          </div>
+        ) : selectedChat ? (
           <>
             {/* Header */}
             <div className="p-4 border-b border-gray-200 flex items-center justify-between">
@@ -331,6 +343,4 @@ const AdminChatList = () => {
     </div>
   )
 }
-
-export default AdminChatList
 

@@ -33,7 +33,7 @@ export function useCreateAdminReview(product_id: number) {
   >({
     mutationFn: payload => adminReviewService.create(product_id, payload),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: reviewKeys.list(product_id) })
+      qc.invalidateQueries({ queryKey: reviewKeys.all })
     }
   })
 }
@@ -47,7 +47,7 @@ export function useUpdateAdminReview(product_id: number, id: number) {
   >({
     mutationFn: payload => adminReviewService.update(product_id, id, payload),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: reviewKeys.list(product_id) })
+      qc.invalidateQueries({ queryKey: reviewKeys.all })
     }
   })
 }
@@ -57,7 +57,7 @@ export function useDeleteAdminReview(product_id: number) {
   return useMutation<{ data: unknown }, Error, number>({
     mutationFn: id => adminReviewService.delete(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: reviewKeys.list(product_id) })
+      qc.invalidateQueries({ queryKey: reviewKeys.all })
     }
   })
 }

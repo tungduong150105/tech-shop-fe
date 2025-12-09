@@ -44,13 +44,16 @@ export default function AdminProductCreate() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const totalQty = colors.reduce((sum, c) => sum + Number(c.quantity || 0), 0)
     await (create as any).mutateAsync({
       name,
       price: Number(price),
+      quantity: totalQty,
       category_id: Number(categoryId || 0),
       sub_category_id: subCategoryId === '' ? undefined : Number(subCategoryId),
       images,
       color: colors,
+      product_colors: colors,
       specs,
       specs_detail: specsDetail
     })
@@ -101,12 +104,12 @@ export default function AdminProductCreate() {
               </div>
               <div>
                 <label className="block text-sm mb-1">Product Price</label>
-                <input
-                  type="number"
-                  className="w-full border rounded px-3 py-2"
-                  value={price}
-                  onChange={e => setPrice(Number(e.target.value))}
-                />
+              <input
+                type="number"
+                className="w-full border rounded px-3 py-2"
+                value={price === 0 ? '' : price}
+                onChange={e => setPrice(e.target.value === '' ? 0 : Number(e.target.value))}
+              />
               </div>
             </div>
           </div>

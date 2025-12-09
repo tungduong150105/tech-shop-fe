@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import ProductCard from '../collection/ProductCard'
 import type { ListProductRes } from '../../types/product'
 import { ProductGridSkeleton, SectionSkeleton } from '../common/LoadingSkeleton'
+import { makeProductSlug } from '../../utils/productSlug'
 
 interface ListProductProps {
   title: string
@@ -41,7 +42,7 @@ const ListProduct = ({ title, products, isLoading = false }: ListProductProps) =
       {!isLoading && (
         <div className="grid grid-cols-4 gap-6">
           {DataRender?.map(product => (
-            <ProductCard product={product} key={product.id} />
+            <ProductCard product={product} key={product.id} slug={makeProductSlug(product.name, product.id)} />
           ))}
         </div>
       )}

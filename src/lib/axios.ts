@@ -25,12 +25,7 @@ axiosClient.interceptors.request.use(
 axiosClient.interceptors.response.use(
   response => response,
   async error => {
-    // If error is 401 (Unauthorized), remove access token
-    if (error.response?.status === 401) {
-      localStorage.removeItem('accessToken')
-      // Optionally redirect to login page
-      // window.location.href = '/login'
-    }
+    // Do not auto-remove token on 401 to avoid logging out during protected flows
     return Promise.reject(error)
   }
 )

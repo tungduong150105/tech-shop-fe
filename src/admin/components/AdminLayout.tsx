@@ -45,8 +45,18 @@ const sections: NavSection[] = [
       { to: '/admin/customers', label: 'Customers', icon: Users },
       { to: '/admin/coupons', label: 'Coupon Code', icon: TicketPercent },
       { to: '/admin/categories', label: 'Categories', icon: Layers },
-      { to: '/admin/filters', label: 'Filter Options', icon: Filter, end: true },
-      { to: '/admin/chat', label: 'Customer Chat', icon: MessageCircle, end: true },
+      {
+        to: '/admin/filters',
+        label: 'Filter Options',
+        icon: Filter,
+        end: true
+      },
+      {
+        to: '/admin/chat',
+        label: 'Customer Chat',
+        icon: MessageCircle,
+        end: true
+      },
       { to: '/admin/settings', label: 'Settings', icon: Settings2, end: true }
     ]
   },
@@ -55,12 +65,12 @@ const sections: NavSection[] = [
     items: [
       { to: '/admin/products/new', label: 'Add Products', icon: PlusCircle },
 
-      { to: '/admin/products', label: 'Product List', icon: List, end: true },
-      {
-        to: '/admin/product-reviews',
-        label: 'Product Reviews',
-        icon: MessageSquare
-      }
+      { to: '/admin/products', label: 'Product List', icon: List, end: true }
+      // {
+      //   to: '/admin/product-reviews',
+      //   label: 'Product Reviews',
+      //   icon: MessageSquare
+      // }
     ]
   }
 ]
@@ -78,18 +88,19 @@ export default function AdminLayout() {
     const token = localStorage.getItem('accessToken')
     if (!token) return
 
-    const apiUrl = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3000'
+    const apiUrl =
+      (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3000'
     const socketUrl = apiUrl.replace('/api', '')
     const newSocket = io(socketUrl, {
       auth: { token },
-      transports: ['websocket', 'polling'],
+      transports: ['websocket', 'polling']
     })
 
     newSocket.on('connect', () => {
       console.log('Admin socket connected for notifications')
     })
 
-    newSocket.on('chat_notification', (data) => {
+    newSocket.on('chat_notification', data => {
       // This will trigger refetch in chat page
       // Badge count will update automatically via useAllChats
     })
@@ -102,7 +113,11 @@ export default function AdminLayout() {
   }, [userData])
 
   // Calculate total unread count
-  const totalUnreadCount = chatsData?.data?.chats?.reduce((sum, chat) => sum + (chat.unreadCount || 0), 0) || 0
+  const totalUnreadCount =
+    chatsData?.data?.chats?.reduce(
+      (sum, chat) => sum + (chat.unreadCount || 0),
+      0
+    ) || 0
 
   const handleLogout = async () => {
     try {
@@ -132,7 +147,9 @@ export default function AdminLayout() {
           {userData?.user && (
             <div className="flex items-center gap-3 pl-3 border-l">
               <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">{userData.user.name}</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {userData.user.name}
+                </p>
                 <p className="text-xs text-gray-500">{userData.user.email}</p>
               </div>
               <button

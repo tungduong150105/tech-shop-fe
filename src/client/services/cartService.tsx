@@ -29,16 +29,20 @@ export const addToCart = async (
 
 export const updateCartQuantity = async (
   productId: number,
-  quantity: number
+  quantity: number,
+  cartItemId?: number
 ): Promise<any> => {
   const { data } = await axiosClient.put(`/cart/update_item/${productId}`, {
-    quantity
+    quantity,
+    cart_item_id: cartItemId
   })
   return data
 }
 
-export const removeCartItem = async (productId: number): Promise<any> => {
-  const { data } = await axiosClient.delete(`/cart/remove_item/${productId}`)
+export const removeCartItem = async (productId: number, cartItemId?: number): Promise<any> => {
+  const { data } = await axiosClient.delete(`/cart/remove_item/${productId}`, {
+    params: cartItemId ? { cart_item_id: cartItemId } : undefined
+  })
   return data
 }
 

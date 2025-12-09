@@ -159,7 +159,6 @@ export default function Profile() {
   const updateProfile = useUpdateProfile()
 
   const [showNameModal, setShowNameModal] = useState(false)
-  const [showEmailModal, setShowEmailModal] = useState(false)
   const [showPhoneModal, setShowPhoneModal] = useState(false)
   const [showAddressModal, setShowAddressModal] = useState(false)
   const [showPostalCodeModal, setShowPostalCodeModal] = useState(false)
@@ -168,7 +167,6 @@ export default function Profile() {
   const [lastName, setLastName] = useState('')
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
-  const [emailEdit, setEmailEdit] = useState('')
   const [phone, setPhone] = useState('')
   const [phoneEdit, setPhoneEdit] = useState('')
   const [address, setAddress] = useState('')
@@ -184,7 +182,6 @@ export default function Profile() {
       setLastName(nameParts.slice(1).join(' ') || '')
       setFullName(userData.user.name || '')
       setEmail(userData.user.email || '')
-      setEmailEdit(userData.user.email || '')
       setPhone(userData.user.phone || '')
       setPhoneEdit(userData.user.phone || '')
       setAddress(userData.user.address || '')
@@ -212,25 +209,6 @@ export default function Profile() {
       toast.success('Name updated successfully')
     } catch (error: any) {
       toast.error(error?.message || 'Failed to update name')
-    }
-  }
-
-  const handleSaveEmail = async () => {
-    if (!emailEdit || !emailEdit.includes('@')) {
-      toast.error('Please enter a valid email address')
-      return
-    }
-
-    try {
-      // Note: Email update might require backend support
-      // For now, we'll just update the local state
-      setEmail(emailEdit)
-      setShowEmailModal(false)
-      toast.success('Email updated successfully')
-      // If backend supports email update, uncomment:
-      // await updateProfile.mutateAsync({ email: emailEdit })
-    } catch (error: any) {
-      toast.error(error?.message || 'Failed to update email')
     }
   }
 
@@ -300,7 +278,7 @@ export default function Profile() {
                   <span className="text-gray-700">{fullName}</span>
                 </div>
                 <button
-                  onClick={() => setShowModal(true)}
+                  onClick={() => setShowNameModal(true)}
                   className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                 >
                   <Edit2 className="w-4 h-4" />
@@ -308,7 +286,7 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Email */}
+            {/* Email (read-only) */}
             <div>
               <label className="block text-sm text-gray-600 mb-2">
                 E-mail Address
@@ -318,15 +296,7 @@ export default function Profile() {
                   <Mail className="w-5 h-5 text-gray-400" />
                   <span className="text-gray-700">{email}</span>
                 </div>
-                <button
-                  onClick={() => {
-                    setEmailEdit(email)
-                    setShowEmailModal(true)
-                  }}
-                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
+               
               </div>
             </div>
           </div>
@@ -355,7 +325,7 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Password */}
+            {/* Password (read-only) */}
             <div>
               <label className="block text-sm text-gray-600 mb-2">
                 Password
@@ -365,9 +335,7 @@ export default function Profile() {
                   <Key className="w-5 h-5 text-gray-400" />
                   <span className="text-gray-700">*********</span>
                 </div>
-                <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                  <Edit2 className="w-4 h-4" />
-                </button>
+                
               </div>
             </div>
           </div>
@@ -434,20 +402,6 @@ export default function Profile() {
           onLastNameChange={setLastName}
           onSubmit={handleSaveName}
           isLoading={updateProfile.isPending}
-        />
-      )}
-
-      {showEmailModal && (
-        <FieldModal
-          title="Edit Email Address"
-          onClose={() => setShowEmailModal(false)}
-          value={emailEdit}
-          onChange={setEmailEdit}
-          onSubmit={handleSaveEmail}
-          isLoading={updateProfile.isPending}
-          type="email"
-          placeholder="Enter email address"
-          label="Email Address"
         />
       )}
 

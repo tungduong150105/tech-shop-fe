@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { toast } from 'sonner'
 import {
   useAdminProduct,
   useCreateAdminProduct,
@@ -39,6 +40,9 @@ export default function AdminProductEdit() {
   const [newSpecValue, setNewSpecValue] = useState('')
   const [newSpecDetailLabel, setNewSpecDetailLabel] = useState('')
   const [newSpecDetailValue, setNewSpecDetailValue] = useState('')
+  const [colorName, setColorName] = useState('')
+  const [colorCode, setColorCode] = useState('#000000')
+  const [colorQty, setColorQty] = useState<number | ''>('')
 
   useEffect(() => {
     if (!isNew && data?.data) {
@@ -53,7 +57,14 @@ export default function AdminProductEdit() {
       setQuantity(Number(p.quantity || 0))
       setCategoryId(Number(p.category_id))
       setSubCategoryId(p.sub_category_id ? Number(p.sub_category_id) : '')
-      setColors(Array.isArray(p.color) ? (p.color as any) : [])
+      const colorArr = (
+        Array.isArray(p.available_colors) && p.available_colors.length > 0
+          ? p.available_colors
+          : Array.isArray(p.color)
+          ? p.color
+          : []
+      ) as any
+      setColors(colorArr)
       setSpecs(Array.isArray(p.specs) ? (p.specs as any) : [])
       setSpecsDetail(
         Array.isArray(p.specs_detail) ? (p.specs_detail as any) : []
@@ -93,33 +104,50 @@ export default function AdminProductEdit() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (isNew) {
-      await (create as any).mutateAsync({
-        name,
-        price: Number(price),
-        category_id: Number(categoryId || 0),
-        sub_category_id:
-          subCategoryId === '' ? undefined : Number(subCategoryId),
-        img: imageUrls,
-        color: colors,
-        specs,
-        specs_detail: specsDetail
-      })
-    } else {
-      const discountAmount =
-        (Number(price) * Number(discountPercent || 0)) / 100
-      await (update as any).mutateAsync({
-        name,
-        price: Number(price),
-        discount: Number(discountAmount.toFixed(2)),
-        quantity: Number(quantity),
-        category_id: categoryId === '' ? undefined : Number(categoryId),
-        sub_category_id: subCategoryId === '' ? null : Number(subCategoryId),
-        color: colors,
-        images
-      })
+    const colorsPayload = colors.map(c => ({
+      name: c.name,
+      code: c.code,
+      quantity: Number(c.quantity || 0)
+    }))
+    const totalQty = colorsPayload.reduce(
+      (s, c) => s + Number(c.quantity || 0),
+      0
+    )
+    try {
+      if (isNew) {
+        await (create as any).mutateAsync({
+          name,
+          price: Number(price),
+          quantity: totalQty,
+          category_id: Number(categoryId || 0),
+          sub_category_id:
+            subCategoryId === '' ? undefined : Number(subCategoryId),
+          img: imageUrls,
+          color: colorsPayload,
+          product_colors: colorsPayload,
+          specs,
+          specs_detail: specsDetail
+        })
+      } else {
+        const discountAmount =
+          (Number(price) * Number(discountPercent || 0)) / 100
+        await (update as any).mutateAsync({
+          name,
+          price: Number(price),
+          discount: Number(discountAmount.toFixed(2)),
+          quantity: totalQty,
+          category_id: categoryId === '' ? undefined : Number(categoryId),
+          sub_category_id: subCategoryId === '' ? null : Number(subCategoryId),
+          color: colorsPayload,
+          product_colors: colorsPayload,
+          images
+        })
+      }
+      toast.success(isNew ? 'Product created' : 'Product updated')
+      nav('/admin/products')
+    } catch (err) {
+      toast.error('Failed to save product')
     }
-    nav('/admin/products')
   }
 
   return (
@@ -134,9 +162,14 @@ export default function AdminProductEdit() {
           )}
           <button
             onClick={onSubmit as any}
-            className="px-3 py-2 bg-green-600 text-white rounded"
+            className="px-3 py-2 bg-green-600 text-white rounded disabled:opacity-60"
+            disabled={create.isPending || update.isPending}
           >
-            {isNew ? 'Publish Product' : 'Save'}
+            {create.isPending || update.isPending
+              ? 'Saving...'
+              : isNew
+              ? 'Publish Product'
+              : 'Save'}
           </button>
         </div>
       </div>
@@ -177,8 +210,10 @@ export default function AdminProductEdit() {
                 <input
                   type="number"
                   className="w-full border rounded px-3 py-2"
-                  value={price}
-                  onChange={e => setPrice(Number(e.target.value))}
+                  value={price === 0 ? '' : price}
+                  onChange={e =>
+                    setPrice(e.target.value === '' ? 0 : Number(e.target.value))
+                  }
                 />
               </div>
               {!isNew && (
@@ -413,37 +448,42 @@ export default function AdminProductEdit() {
                 <input
                   placeholder="Color name"
                   className="border rounded px-2 py-1 text-sm w-full"
-                  id="colorName"
+                  value={colorName}
+                  onChange={e => setColorName(e.target.value)}
                 />
                 <div className="grid grid-cols-2 gap-2 items-center">
                   <input
                     type="color"
                     className="border rounded h-8 w-full"
-                    id="colorCode"
+                    value={colorCode}
+                    onChange={e => setColorCode(e.target.value)}
                   />
                   <input
                     type="number"
                     placeholder="Qty"
+                    min={0}
                     className="border rounded px-2 py-1 text-sm w-full"
-                    id="colorQty"
+                    value={colorQty}
+                    onChange={e =>
+                      setColorQty(
+                        e.target.value === '' ? '' : Number(e.target.value)
+                      )
+                    }
                   />
                 </div>
                 <button
                   type="button"
                   className="px-2 py-1 border rounded text-sm w-full"
                   onClick={() => {
-                    const name = (
-                      document.getElementById('colorName') as HTMLInputElement
-                    ).value
-                    const code = (
-                      document.getElementById('colorCode') as HTMLInputElement
-                    ).value
-                    const qtyStr = (
-                      document.getElementById('colorQty') as HTMLInputElement
-                    ).value
-                    const quantity = qtyStr ? Number(qtyStr) : 0
-                    if (name && code)
-                      setColors(prev => [...prev, { name, code, quantity }])
+                    if (!colorName.trim() || !colorCode) return
+                    const quantity = colorQty === '' ? 0 : Number(colorQty)
+                    setColors(prev => [
+                      ...prev,
+                      { name: colorName.trim(), code: colorCode, quantity }
+                    ])
+                    setColorName('')
+                    setColorCode('#000000')
+                    setColorQty('')
                   }}
                 >
                   Add

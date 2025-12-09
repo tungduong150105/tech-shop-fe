@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react'
 import { Edit3, Trash2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { toast } from 'sonner'
 import { useAdminCategories, useDeleteAdminCategory } from '../../hooks'
+import ConfirmModal from '../../../client/components/common/ConfirmModal'
 
 export default function AdminCategories() {
   const { data, isLoading } = useAdminCategories()
   const del = useDeleteAdminCategory()
   const [query, setQuery] = useState('')
+  const [pendingDelete, setPendingDelete] = useState<number | null>(null)
 
   return (
     <div className="grid gap-6">
@@ -28,10 +31,31 @@ export default function AdminCategories() {
         </div>
       </div>
 
+      <ConfirmModal
+        open={pendingDelete !== null}
+        title="Delete category?"
+        description="This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmClassName="bg-red-600 hover:bg-red-700"
+        onClose={() => setPendingDelete(null)}
+        onConfirm={() => {
+          if (pendingDelete === null) return
+          del.mutate(pendingDelete, {
+            onSuccess: () => toast.success('Category deleted'),
+            onError: () => toast.error('Failed to delete category'),
+            onSettled: () => setPendingDelete(null)
+          })
+        }}
+      />
       <div>
         <div className="bg-white rounded border">
           {isLoading ? (
-            <div className="p-6">Loading...</div>
+            <div className="p-6 space-y-3 animate-pulse">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-10 bg-gray-100 rounded" />
+              ))}
+            </div>
           ) : (
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
@@ -61,7 +85,7 @@ export default function AdminCategories() {
                       onEdit={() => {
                         window.location.href = `/admin/categories/${c.id}`
                       }}
-                      onDelete={() => del.mutateAsync(c.id)}
+                      onDelete={() => setPendingDelete(c.id)}
                     />
                   ))}
               </tbody>

@@ -111,7 +111,7 @@ function App() {
           <Route path="/" element={<UserLayout />}>
             {/* User Layout */}
             <Route index element={<Home />} />
-            <Route path="/product/:id" element={<Detail />} />
+            <Route path="/product/:slug" element={<Detail />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/collection/:collection" element={<Collection />} />
             <Route path="/cart" element={<Cart />} />
@@ -124,8 +124,8 @@ function App() {
               <Route index element={<AdminProductsList />} />
               <Route path="new" element={<AdminProductCreate />} />
               <Route path=":id" element={<AdminProductEdit />} />
+              <Route path=":id/reviews" element={<AdminProductReviews />} />
             </Route>
-            <Route path="product-reviews" element={<AdminProductReviews />} />
             <Route path="coupons">
               <Route index element={<AdminCouponsList />} />
               <Route path=":id" element={<AdminCouponEdit />} />

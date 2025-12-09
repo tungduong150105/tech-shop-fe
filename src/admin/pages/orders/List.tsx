@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { toast } from 'sonner'
 import { useAdminOrders, useAdminOrderStats } from '../../hooks'
 import SkeletonTable from '../../components/common/SkeletonTable'
 
@@ -8,7 +9,7 @@ export default function AdminOrdersList() {
   const [limit] = useState(10)
   const [status, setStatus] = useState<string | undefined>(undefined)
   const [q, setQ] = useState('')
-  const { data, isLoading } = useAdminOrders({
+  const { data, isLoading, error } = useAdminOrders({
     page,
     limit,
     status,
@@ -37,7 +38,11 @@ export default function AdminOrdersList() {
         />
         <KpiCard
           title="Total Revenue"
-          value={statsLoading ? '...' : formatCurrency(stats?.revenue || 0)}
+          value={
+            statsLoading
+              ? '...'
+              : `${Number(stats?.revenue || 0).toLocaleString('vi-VN')} ₫`
+          }
           delta=""
         />
         <KpiCard
@@ -68,7 +73,7 @@ export default function AdminOrdersList() {
                     : 'hover:bg-gray-100'
                 }`}
               >
-                {t.label}
+              {t.label}
               </button>
             ))}
           </div>
@@ -90,15 +95,19 @@ export default function AdminOrdersList() {
 
         {isLoading ? (
           <SkeletonTable rows={5} cols={7} />
+        ) : error ? (
+          <div className="p-6 text-red-700 bg-red-50 border-b border-red-200">
+            Failed to load orders. Please retry.
+          </div>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-green-50">
               <tr>
                 <th className="text-left p-2">No.</th>
-                <th className="text-left p-2">Order Id</th>
-                <th className="text-left p-2">Product</th>
+                <th className="text-left p-2">Order</th>
+                <th className="text-left p-2">Items</th>
                 <th className="text-left p-2">Date</th>
-                <th className="text-left p-2">Price</th>
+                <th className="text-left p-2">Amount</th>
                 <th className="text-left p-2">Payment</th>
                 <th className="text-left p-2">Status</th>
               </tr>
@@ -107,14 +116,26 @@ export default function AdminOrdersList() {
               {data?.data.orders.map((o, idx) => (
                 <tr key={o.id} className="border-t">
                   <td className="p-2">{idx + 1}</td>
-                  <td className="p-2">#{String(o.id).padStart(6, '0')}</td>
-                  <td className="p-2">{o.order_items?.length || 0} items</td>
+                  <td className="p-2">
+                    <div className="flex flex-col">
+                      <Link
+                        to={`/admin/orders/${o.id}`}
+                        className="text-blue-600 hover:underline font-medium"
+                      >
+                        {o.order_number ? `#${o.order_number}` : `#${String(o.id).padStart(6, '0')}`}
+                      </Link>
+                      <span className="text-xs text-gray-500">{o.user?.name || '—'}</span>
+                    </div>
+                  </td>
+                  <td className="p-2">{o.order_items?.length || 0}</td>
                   <td className="p-2">
                     {o.created_at
                       ? new Date(o.created_at).toLocaleDateString()
                       : '-'}
                   </td>
-                  <td className="p-2">${Number(o.total_amount)}</td>
+                  <td className="p-2 font-semibold">
+                    {Number(o.total_amount).toLocaleString('vi-VN')} ₫
+                  </td>
                   <td className="p-2 flex items-center gap-2">
                     {getPaymentStatus(o.payment_method)}
                   </td>

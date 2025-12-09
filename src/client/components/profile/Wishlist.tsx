@@ -5,8 +5,9 @@ import { toast } from 'sonner'
 import { useWishlist, useRemoveFromWishlist, useClearWishlist } from '../../hooks/useWishlist'
 import { useAddToCart } from '../../hooks/useCart'
 import ConfirmModal from '../common/ConfirmModal'
+import { makeProductSlug } from '../../utils/productSlug'
 
-const Wishlist = () => {
+export default function Wishlist() {
   const navigate = useNavigate()
   const { data: wishlistData, isLoading } = useWishlist()
   const removeMutation = useRemoveFromWishlist()
@@ -156,6 +157,7 @@ const Wishlist = () => {
             {items.map(item => {
               const product = item.product
               const productId = parseInt(product.id)
+              const productSlug = makeProductSlug(product.name, productId)
               const mainImage = product.img && product.img.length > 0 ? product.img[0] : ''
 
               return (
@@ -165,7 +167,7 @@ const Wishlist = () => {
                 >
                   <div
                     className="w-24 h-24 flex-shrink-0 cursor-pointer"
-                    onClick={() => navigate(`/product/${productId}`)}
+                    onClick={() => navigate(`/product/${productSlug}`)}
                   >
                     <img
                       src={mainImage}
@@ -177,7 +179,7 @@ const Wishlist = () => {
                   <div className="flex-1 min-w-0">
                     <h3
                       className="text-lg font-semibold text-gray-900 mb-1 cursor-pointer hover:text-blue-600 transition"
-                      onClick={() => navigate(`/product/${productId}`)}
+                      onClick={() => navigate(`/product/${productSlug}`)}
                     >
                       {product.name}
                     </h3>
@@ -216,5 +218,3 @@ const Wishlist = () => {
     </div>
   )
 }
-
-export default Wishlist

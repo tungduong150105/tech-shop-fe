@@ -23,13 +23,14 @@ const Cart = () => {
   const { data: cartData, isLoading } = useCart()
   const updateQuantityMutation = useUpdateCartQuantity()
   const removeItemMutation = useRemoveCartItem()
-  const [pendingRemove, setPendingRemove] = useState<{ id: number; name: string } | null>(null)
+  const [pendingRemove, setPendingRemove] = useState<{ id: number; cartItemId: number; name: string } | null>(null)
 
   const cart = cartData?.cart
   const items = cart?.items || []
 
   const handleInc = (
     productId: number,
+    cartItemId: number,
     currentQuantity: number,
     maxQuantity: number
   ) => {
@@ -38,7 +39,7 @@ const Cart = () => {
       return
     }
     updateQuantityMutation.mutate(
-      { productId, quantity: currentQuantity + 1 },
+      { productId, cartItemId, quantity: currentQuantity + 1 },
       {
         onSuccess: () => {
           toast.success('Quantity updated')
@@ -50,10 +51,10 @@ const Cart = () => {
     )
   }
 
-  const handleDec = (productId: number, currentQuantity: number) => {
+  const handleDec = (productId: number, cartItemId: number, currentQuantity: number) => {
     if (currentQuantity > 1) {
       updateQuantityMutation.mutate(
-        { productId, quantity: currentQuantity - 1 },
+        { productId, cartItemId, quantity: currentQuantity - 1 },
         {
           onSuccess: () => {
             toast.success('Quantity updated')
@@ -66,13 +67,15 @@ const Cart = () => {
     }
   }
 
-  const handleRemove = (productId: number, productName: string) => {
-    setPendingRemove({ id: productId, name: productName })
+  const handleRemove = (productId: number, cartItemId: number, productName: string) => {
+    setPendingRemove({ id: productId, name: productName, cartItemId })
   }
 
   const confirmRemove = () => {
     if (!pendingRemove) return
-    removeItemMutation.mutate(pendingRemove.id, {
+    removeItemMutation.mutate(
+      { productId: pendingRemove.id, cartItemId: pendingRemove.cartItemId },
+      {
       onSuccess: () => {
         toast.success('Item removed from cart')
         setPendingRemove(null)
@@ -80,8 +83,9 @@ const Cart = () => {
       onError: () => {
         toast.error('Failed to remove item')
         setPendingRemove(null)
+        }
       }
-    })
+    )
   }
 
   const shipmentCost = 22.5 // Fixed shipment cost for now
@@ -148,7 +152,7 @@ const Cart = () => {
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Section - Cart Items */}
           <div className="lg:col-span-2 space-y-4">
             {isLoading && (
@@ -262,7 +266,7 @@ const Cart = () => {
                         <div className="flex items-center gap-4">
                           <button
                             onClick={() =>
-                              handleRemove(item.product_id, item.name)
+                              handleRemove(item.product_id, item.id, item.name)
                             }
                             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             title="Remove item"
@@ -273,7 +277,7 @@ const Cart = () => {
                           <div className="flex items-center gap-3 border border-gray-300 rounded-lg">
                             <button
                               onClick={() =>
-                                handleDec(item.product_id, item.quantity)
+                                handleDec(item.product_id, item.id, item.quantity)
                               }
                               disabled={item.quantity <= 1}
                               className="p-2 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -287,6 +291,7 @@ const Cart = () => {
                               onClick={() =>
                                 handleInc(
                                   item.product_id,
+                                  item.id,
                                   item.quantity,
                                   item.max_quantity
                                 )

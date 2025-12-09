@@ -9,8 +9,20 @@ const PaymentResult = () => {
   const params = useMemo(() => new URLSearchParams(location.search), [location.search])
   const responseCode = params.get('vnp_ResponseCode')
   const txnRef = params.get('vnp_TxnRef')
-  const amount = params.get('vnp_Amount')
-  const isSuccess = responseCode === '00'
+  const vnpAmount = params.get('vnp_Amount')
+  const method = params.get('method') // cod | bank_transfer | vnpay (default)
+  const order = params.get('order')
+  const amountParam = params.get('amount')
+
+  const isSuccess =
+    method === 'cod' || method === 'bank_transfer'
+      ? true
+      : responseCode === '00'
+
+  const amountDisplay =
+    amountParam || vnpAmount
+      ? `${Number(amountParam || vnpAmount) / 100} ₫`.replace('.00', '')
+      : '—'
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -27,25 +39,29 @@ const PaymentResult = () => {
         </h1>
         <p className="text-gray-600">
           {isSuccess
-            ? 'Cảm ơn bạn đã thanh toán qua VNPay.'
+            ? method === 'cod'
+              ? 'Đơn hàng của bạn sẽ được thanh toán khi nhận hàng (COD).'
+              : method === 'bank_transfer'
+              ? 'Đơn hàng đã tạo. Vui lòng hoàn tất chuyển khoản.'
+              : 'Cảm ơn bạn đã thanh toán qua VNPay.'
             : 'Có lỗi khi thanh toán. Vui lòng thử lại hoặc chọn phương thức khác.'}
         </p>
 
         <div className="bg-gray-50 rounded-xl p-4 text-left text-sm text-gray-700 space-y-2">
           <div className="flex justify-between">
             <span>Mã giao dịch</span>
-            <span className="font-semibold">{txnRef || '-'}</span>
+            <span className="font-semibold">{order || txnRef || '-'}</span>
           </div>
           <div className="flex justify-between">
             <span>Số tiền</span>
-            <span className="font-semibold">
-              {amount ? `${Number(amount) / 100} ₫` : '—'}
-            </span>
+            <span className="font-semibold">{amountDisplay}</span>
           </div>
-          <div className="flex justify-between">
-            <span>Mã phản hồi</span>
-            <span className="font-semibold">{responseCode || '-'}</span>
-          </div>
+          {method !== 'cod' && method !== 'bank_transfer' && (
+            <div className="flex justify-between">
+              <span>Mã phản hồi</span>
+              <span className="font-semibold">{responseCode || '-'}</span>
+            </div>
+          )}
         </div>
 
         <div className="flex justify-center gap-3 pt-2">

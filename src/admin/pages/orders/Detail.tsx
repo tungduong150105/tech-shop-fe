@@ -1,5 +1,6 @@
 import React from 'react'
 import { useParams } from 'react-router-dom'
+import { toast } from 'sonner'
 import { useAdminOrder, useUpdateAdminOrderStatus } from '../../hooks'
 
 export default function AdminOrderDetail() {
@@ -8,28 +9,54 @@ export default function AdminOrderDetail() {
   const { data, isLoading } = useAdminOrder(oid)
   const update = useUpdateAdminOrderStatus(oid)
 
-  if (isLoading) return <div>Loading...</div>
+  if (isLoading) return <div className="p-6">Loading...</div>
 
   const order = data?.data
   if (!order) return null
 
+  const addressObj = (order as any).shipping_address || {}
+  const receiverName = (order as any).receiver_name || addressObj.name || '—'
+  const receiverPhone = (order as any).receiver_phone || addressObj.phone || '—'
+  const addressText =
+    typeof addressObj === 'string'
+      ? addressObj
+      : addressObj.address ||
+        [addressObj.street, addressObj.city, addressObj.state, addressObj.country]
+          .filter(Boolean)
+          .join(', ')
+
+  const statusOptions = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'] as const
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Order #{order.id}</h1>
+        <div>
+          <h1 className="text-xl font-semibold">
+            Order {order.order_number ? `#${order.order_number}` : `#${order.id}`}
+          </h1>
+          <p className="text-sm text-gray-500">
+            Created:{' '}
+            {order.created_at
+              ? new Date(order.created_at).toLocaleString()
+              : '—'}
+          </p>
+        </div>
         <select
           className="border rounded px-2 py-1"
           value={order.status}
-          onChange={e => update.mutate({ status: e.target.value as any })}
+          onChange={e => {
+            const next = e.target.value as any
+            update.mutate(
+              { status: next },
+              {
+                onSuccess: () => toast.success('Order status updated'),
+                onError: () => toast.error('Failed to update status')
+              }
+            )
+          }}
+          disabled={update.isPending}
         >
-          {[
-            'pending',
-            'confirmed',
-            'processing',
-            'shipped',
-            'delivered',
-            'cancelled'
-          ].map(s => (
+          {statusOptions.map(s => (
             <option key={s} value={s}>
               {s}
             </option>
@@ -44,26 +71,21 @@ export default function AdminOrderDetail() {
           </div>
         </div>
         <div className="bg-white rounded border p-3">
-          <div className="text-sm text-gray-500">Payment</div>
-          <div className="mt-1 text-sm">{order.payment_method || '—'}</div>
+          <div className="text-sm text-gray-500">Receiver</div>
+          <div className="mt-1 text-sm font-medium">{receiverName}</div>
+          <div className="text-xs text-gray-600">{receiverPhone}</div>
         </div>
         <div className="bg-white rounded border p-3">
-          <div className="text-sm text-gray-500">Total</div>
-          <div className="mt-1 text-sm font-medium">
-            ${Number(order.total_amount)}
+          <div className="text-sm text-gray-500">Payment</div>
+          <div className="mt-1 text-sm capitalize">
+            {order.payment_method || '—'}
           </div>
         </div>
       </div>
       <div className="bg-white rounded border p-3">
         <div className="text-sm text-gray-500">Shipping address</div>
         <div className="mt-1 text-sm">
-          {order.shipping_address?.street || ''}
-          {order.shipping_address?.city
-            ? `, ${order.shipping_address.city}`
-            : ''}
-          {order.shipping_address?.country
-            ? `, ${order.shipping_address.country}`
-            : ''}
+          {addressText || '—'}
         </div>
       </div>
       <div className="bg-white rounded border">
@@ -80,12 +102,28 @@ export default function AdminOrderDetail() {
             {order.order_items.map(it => {
               const anyIt = it as any
               const name = anyIt.product?.name || `#${it.product_id}`
+              const img =
+                (Array.isArray(anyIt.product?.img) && anyIt.product?.img?.[0]) ||
+                anyIt.product?.image_url
               return (
                 <tr key={`${it.product_id}-${it.id}`} className="border-t">
-                  <td className="p-2">{name}</td>
+                  <td className="p-2 flex items-center gap-2">
+                    {img && (
+                      <img
+                        src={img}
+                        alt={name}
+                        className="w-10 h-10 object-cover rounded border"
+                      />
+                    )}
+                    <span>{name}</span>
+                  </td>
                   <td className="p-2">{it.quantity}</td>
-                  <td className="p-2">${Number(it.unit_price)}</td>
-                  <td className="p-2">${Number(it.total_price)}</td>
+                  <td className="p-2">
+                    {Number(it.unit_price).toLocaleString('vi-VN')} ₫
+                  </td>
+                  <td className="p-2">
+                    {Number(it.total_price).toLocaleString('vi-VN')} ₫
+                  </td>
                 </tr>
               )
             })}

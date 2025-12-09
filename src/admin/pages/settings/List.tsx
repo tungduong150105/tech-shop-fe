@@ -1,21 +1,39 @@
 import { useState } from 'react'
-import { Save, Trash2, Plus, Settings2, Building2, Truck, Globe } from 'lucide-react'
+import {
+  Save,
+  Trash2,
+  Plus,
+  Settings2,
+  Building2,
+  Truck,
+  Globe
+} from 'lucide-react'
 import { toast } from 'sonner'
-import { useSettings, useUpsertSetting, useUpdateSetting, useDeleteSetting } from '../../hooks/useSettings'
-import type { Setting, UpsertSettingPayload } from '../../services/settingService'
+import {
+  useSettings,
+  useUpsertSetting,
+  useUpdateSetting,
+  useDeleteSetting
+} from '../../hooks/useSettings'
+import type {
+  Setting,
+  UpsertSettingPayload
+} from '../../services/settingService'
 import ConfirmModal from '../../../client/components/common/ConfirmModal'
 
 const CATEGORIES = [
   { value: 'bank', label: 'Bank Settings', icon: Building2 },
   { value: 'shipping', label: 'Shipping Settings', icon: Truck },
-  { value: 'general', label: 'General Settings', icon: Globe },
-  { value: 'payment', label: 'Payment Settings', icon: Settings2 }
+  { value: 'general', label: 'General Settings', icon: Globe }
 ]
 
 export default function SettingsList() {
   const [selectedCategory, setSelectedCategory] = useState<string>('bank')
   const [editingKey, setEditingKey] = useState<string | null>(null)
-  const [showDeleteModal, setShowDeleteModal] = useState<{ key: string; name: string } | null>(null)
+  const [showDeleteModal, setShowDeleteModal] = useState<{
+    key: string
+    name: string
+  } | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
 
   const { data, isLoading, error } = useSettings(selectedCategory)
@@ -153,7 +171,9 @@ export default function SettingsList() {
                 onStartEdit={() => setEditingKey(setting.key)}
                 onCancelEdit={() => setEditingKey(null)}
                 onSave={handleSave}
-                onDelete={() => setShowDeleteModal({ key: setting.key, name: setting.key })}
+                onDelete={() =>
+                  setShowDeleteModal({ key: setting.key, name: setting.key })
+                }
                 parseValue={parseValue}
                 formatValue={formatValue}
               />
@@ -209,7 +229,9 @@ function SettingItem({
   formatValue: (value: any, dataType: string) => string
 }) {
   const parsedValue = parseValue(setting.value, setting.data_type)
-  const [editValue, setEditValue] = useState(formatValue(parsedValue, setting.data_type))
+  const [editValue, setEditValue] = useState(
+    formatValue(parsedValue, setting.data_type)
+  )
 
   const handleSave = () => {
     const newValue = parseValue(editValue, setting.data_type)
@@ -337,7 +359,11 @@ function AddSettingModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.key || formData.value === undefined || formData.value === '') {
+    if (
+      !formData.key ||
+      formData.value === undefined ||
+      formData.value === ''
+    ) {
       toast.error('Key and value are required')
       return
     }
@@ -391,7 +417,9 @@ function AddSettingModal({
             {formData.data_type === 'boolean' ? (
               <select
                 value={String(formData.value)}
-                onChange={e => setFormData({ ...formData, value: e.target.value === 'true' })}
+                onChange={e =>
+                  setFormData({ ...formData, value: e.target.value === 'true' })
+                }
                 className="w-full px-3 py-2 border rounded-lg"
               >
                 <option value="true">True</option>
@@ -400,7 +428,9 @@ function AddSettingModal({
             ) : formData.data_type === 'json' ? (
               <textarea
                 value={String(formData.value)}
-                onChange={e => setFormData({ ...formData, value: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, value: e.target.value })
+                }
                 rows={4}
                 className="w-full px-3 py-2 border rounded-lg font-mono text-sm"
                 placeholder='{"key": "value"}'
@@ -409,7 +439,9 @@ function AddSettingModal({
               <input
                 type={formData.data_type === 'number' ? 'number' : 'text'}
                 value={String(formData.value)}
-                onChange={e => setFormData({ ...formData, value: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, value: e.target.value })
+                }
                 className="w-full px-3 py-2 border rounded-lg"
                 required
               />
@@ -417,11 +449,15 @@ function AddSettingModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Description</label>
+            <label className="block text-sm font-medium mb-1">
+              Description
+            </label>
             <input
               type="text"
               value={formData.description || ''}
-              onChange={e => setFormData({ ...formData, description: e.target.value })}
+              onChange={e =>
+                setFormData({ ...formData, description: e.target.value })
+              }
               className="w-full px-3 py-2 border rounded-lg"
             />
           </div>
@@ -431,7 +467,9 @@ function AddSettingModal({
               <label className="block text-sm font-medium mb-1">Category</label>
               <select
                 value={formData.category}
-                onChange={e => setFormData({ ...formData, category: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, category: e.target.value })
+                }
                 className="w-full px-3 py-2 border rounded-lg"
               >
                 {CATEGORIES.map(cat => (
@@ -443,13 +481,16 @@ function AddSettingModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Data Type</label>
+              <label className="block text-sm font-medium mb-1">
+                Data Type
+              </label>
               <select
                 value={formData.data_type}
                 onChange={e =>
                   setFormData({
                     ...formData,
-                    data_type: e.target.value as UpsertSettingPayload['data_type']
+                    data_type: e.target
+                      .value as UpsertSettingPayload['data_type']
                   })
                 }
                 className="w-full px-3 py-2 border rounded-lg"
@@ -467,7 +508,9 @@ function AddSettingModal({
               type="checkbox"
               id="is_public"
               checked={formData.is_public}
-              onChange={e => setFormData({ ...formData, is_public: e.target.checked })}
+              onChange={e =>
+                setFormData({ ...formData, is_public: e.target.checked })
+              }
               className="w-4 h-4"
             />
             <label htmlFor="is_public" className="text-sm">
@@ -495,4 +538,3 @@ function AddSettingModal({
     </div>
   )
 }
-
