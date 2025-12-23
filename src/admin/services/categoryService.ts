@@ -9,8 +9,10 @@ import {
 } from '../types'
 
 export const adminCategoryService = {
-  list() {
-    return axiosClient.get<CategoryListResponse>('/categories')
+  list(params?: { page?: number; limit?: number; q?: string }) {
+    return axiosClient.get<CategoryListResponse>('/categories/admin', {
+      params
+    })
   },
   getById(id: number) {
     return axiosClient.get<CategoryResponse>(`/categories/${id}`)

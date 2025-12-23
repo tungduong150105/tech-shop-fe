@@ -15,13 +15,19 @@ import {
 
 const categoryKeys = {
   all: ['admin', 'categories'] as const,
+  list: (params?: { page?: number; limit?: number; q?: string }) =>
+    [...categoryKeys.all, 'list', params] as const,
   detail: (id: number) => [...categoryKeys.all, id] as const
 }
 
-export function useAdminCategories() {
+export function useAdminCategories(params?: {
+  page?: number
+  limit?: number
+  q?: string
+}) {
   return useQuery<{ data: CategoryListResponse }, Error>({
-    queryKey: categoryKeys.all,
-    queryFn: () => adminCategoryService.list()
+    queryKey: categoryKeys.list(params),
+    queryFn: () => adminCategoryService.list(params)
   })
 }
 

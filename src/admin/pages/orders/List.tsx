@@ -17,7 +17,7 @@ export default function AdminOrdersList() {
   })
   const { data: statsData, isLoading: statsLoading } = useAdminOrderStats()
   const pages = useMemo(
-    () => Math.max(1, data?.data.pagination.pages || 1),
+    () => Math.max(1, data?.data.pagination.total_pages || 1),
     [data]
   )
 
@@ -33,7 +33,9 @@ export default function AdminOrdersList() {
         />
         <KpiCard
           title="New Orders"
-          value={statsLoading ? '...' : formatNumber(stats?.pending_orders || 0)}
+          value={
+            statsLoading ? '...' : formatNumber(stats?.pending_orders || 0)
+          }
           delta=""
         />
         <KpiCard
@@ -47,7 +49,11 @@ export default function AdminOrdersList() {
         />
         <KpiCard
           title="Recent Orders"
-          value={statsLoading ? '...' : formatNumber(stats?.recent_orders?.length || 0)}
+          value={
+            statsLoading
+              ? '...'
+              : formatNumber(stats?.recent_orders?.length || 0)
+          }
           delta=""
         />
       </div>
@@ -73,7 +79,7 @@ export default function AdminOrdersList() {
                     : 'hover:bg-gray-100'
                 }`}
               >
-              {t.label}
+                {t.label}
               </button>
             ))}
           </div>
@@ -122,9 +128,13 @@ export default function AdminOrdersList() {
                         to={`/admin/orders/${o.id}`}
                         className="text-blue-600 hover:underline font-medium"
                       >
-                        {o.order_number ? `#${o.order_number}` : `#${String(o.id).padStart(6, '0')}`}
+                        {o.order_number
+                          ? `#${o.order_number}`
+                          : `#${String(o.id).padStart(6, '0')}`}
                       </Link>
-                      <span className="text-xs text-gray-500">{o.user?.name || '—'}</span>
+                      <span className="text-xs text-gray-500">
+                        {o.user?.name || '—'}
+                      </span>
                     </div>
                   </td>
                   <td className="p-2">{o.order_items?.length || 0}</td>
@@ -166,7 +176,7 @@ export default function AdminOrdersList() {
               <button
                 key={n}
                 className={`px-3 py-1.5 rounded border ${
-                  n === (data?.data.pagination.page || 1)
+                  n === (data?.data.pagination.current_page || 1)
                     ? 'bg-green-600 text-white border-green-600'
                     : ''
                 }`}
@@ -238,7 +248,7 @@ function getPaymentStatus(paymentMethod: string | null | undefined) {
       </span>
     )
   }
-  
+
   const method = paymentMethod.toLowerCase()
   if (method === 'cod') {
     return (
@@ -248,7 +258,7 @@ function getPaymentStatus(paymentMethod: string | null | undefined) {
       </span>
     )
   }
-  
+
   return (
     <span className="inline-flex items-center gap-1 text-xs text-green-700">
       <span className="h-2 w-2 rounded-full bg-green-500" />
@@ -268,6 +278,6 @@ function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-    minimumFractionDigits: 2,
+    minimumFractionDigits: 2
   }).format(amount)
 }

@@ -2,7 +2,11 @@ import React, { useState } from 'react'
 import { Heart, Trash2, ShoppingCart, Package } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { useWishlist, useRemoveFromWishlist, useClearWishlist } from '../../hooks/useWishlist'
+import {
+  useWishlist,
+  useRemoveFromWishlist,
+  useClearWishlist
+} from '../../hooks/useWishlist'
 import { useAddToCart } from '../../hooks/useCart'
 import ConfirmModal from '../common/ConfirmModal'
 import { makeProductSlug } from '../../utils/productSlug'
@@ -13,7 +17,10 @@ export default function Wishlist() {
   const removeMutation = useRemoveFromWishlist()
   const clearMutation = useClearWishlist()
   const addToCartMutation = useAddToCart()
-  const [pendingRemove, setPendingRemove] = useState<{ id: number; name: string } | null>(null)
+  const [pendingRemove, setPendingRemove] = useState<{
+    id: number
+    name: string
+  } | null>(null)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
 
   const items = wishlistData?.items || []
@@ -48,20 +55,6 @@ export default function Wishlist() {
     })
   }
 
-  const handleAddToCart = (productId: number) => {
-    addToCartMutation.mutate(
-      { productId, quantity: 1 },
-      {
-        onSuccess: () => {
-          toast.success('Added to cart')
-        },
-        onError: () => {
-          toast.error('Failed to add to cart')
-        }
-      }
-    )
-  }
-
   const formatPrice = (price: string, discount: string) => {
     const priceNum = parseFloat(price)
     const discountNum = parseFloat(discount)
@@ -72,11 +65,17 @@ export default function Wishlist() {
           <span className="text-lg font-semibold text-gray-900">
             ${discountedPrice.toFixed(2)}
           </span>
-          <span className="text-sm text-gray-500 line-through">${priceNum.toFixed(2)}</span>
+          <span className="text-sm text-gray-500 line-through">
+            ${priceNum.toFixed(2)}
+          </span>
         </div>
       )
     }
-    return <span className="text-lg font-semibold text-gray-900">${priceNum.toFixed(2)}</span>
+    return (
+      <span className="text-lg font-semibold text-gray-900">
+        ${priceNum.toFixed(2)}
+      </span>
+    )
   }
 
   if (isLoading) {
@@ -102,7 +101,11 @@ export default function Wishlist() {
       <ConfirmModal
         open={!!pendingRemove}
         title="Remove from wishlist?"
-        description={pendingRemove ? `Remove "${pendingRemove.name}" from your wishlist?` : ''}
+        description={
+          pendingRemove
+            ? `Remove "${pendingRemove.name}" from your wishlist?`
+            : ''
+        }
         confirmText="Remove"
         cancelText="Cancel"
         onConfirm={confirmRemove}
@@ -143,8 +146,12 @@ export default function Wishlist() {
             <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Heart className="w-12 h-12 text-gray-400" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">Your wishlist is empty</h3>
-            <p className="text-gray-500 mb-6">Start adding products you love!</p>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              Your wishlist is empty
+            </h3>
+            <p className="text-gray-500 mb-6">
+              Start adding products you love!
+            </p>
             <button
               onClick={() => navigate('/')}
               className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
@@ -158,7 +165,8 @@ export default function Wishlist() {
               const product = item.product
               const productId = parseInt(product.id)
               const productSlug = makeProductSlug(product.name, productId)
-              const mainImage = product.img && product.img.length > 0 ? product.img[0] : ''
+              const mainImage =
+                product.img && product.img.length > 0 ? product.img[0] : ''
 
               return (
                 <div
@@ -183,24 +191,12 @@ export default function Wishlist() {
                     >
                       {product.name}
                     </h3>
-                    <div className="mb-2">{formatPrice(product.price, product.discount)}</div>
-                    {product.rating && (
-                      <div className="flex items-center gap-1 text-sm text-yellow-500">
-                        <span>★</span>
-                        <span>{parseFloat(product.rating).toFixed(1)}</span>
-                      </div>
-                    )}
+                    <div className="mb-2">
+                      {formatPrice(product.price, product.discount)}
+                    </div>
                   </div>
 
-                  <div className="flex flex-col gap-2">
-                    <button
-                      onClick={() => handleAddToCart(productId)}
-                      disabled={addToCartMutation.isPending}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                    >
-                      <ShoppingCart className="w-4 h-4" />
-                      <span>Add to Cart</span>
-                    </button>
+                  <div className="flex flex-col">
                     <button
                       onClick={() => handleRemove(productId, product.name)}
                       className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition flex items-center gap-2"

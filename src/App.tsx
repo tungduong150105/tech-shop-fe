@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react'
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster, toast } from 'sonner'
+import 'antd/dist/reset.css'
 
 import UserLayout from './client/layout/UserLayout'
 import Home from './client/pages/Home'
@@ -28,6 +29,9 @@ import AdminCustomersList from './admin/pages/customers/List'
 import AdminFiltersList from './admin/pages/filters/List'
 import AdminFilterCreate from './admin/pages/filters/Create'
 import AdminFilterEdit from './admin/pages/filters/Edit'
+import AdminFilterKeysList from './admin/pages/filterKeys/List'
+import AdminFilterKeyCreate from './admin/pages/filterKeys/Create'
+import AdminFilterKeyEdit from './admin/pages/filterKeys/Edit'
 import AdminSettingsList from './admin/pages/settings/List'
 import AdminChatList from './admin/pages/chat/List'
 import Cart from './client/pages/Cart'
@@ -141,6 +145,11 @@ function App() {
               <Route index element={<AdminFiltersList />} />
               <Route path="new" element={<AdminFilterCreate />} />
               <Route path=":id" element={<AdminFilterEdit />} />
+            </Route>
+            <Route path="filter-keys">
+              <Route index element={<AdminFilterKeysList />} />
+              <Route path="create" element={<AdminFilterKeyCreate />} />
+              <Route path=":id/edit" element={<AdminFilterKeyEdit />} />
             </Route>
             <Route path="orders">
               <Route index element={<AdminOrdersList />} />

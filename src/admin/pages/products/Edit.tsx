@@ -17,7 +17,7 @@ export default function AdminProductEdit() {
   const update = useUpdateAdminProduct(pid as number)
   const nav = useNavigate()
 
-  const { data: catData } = useAdminCategories()
+  const { data: catData } = useAdminCategories({ limit: 100 })
 
   const [name, setName] = useState('')
   const [price, setPrice] = useState<number>(0)
@@ -35,6 +35,7 @@ export default function AdminProductEdit() {
   const [images, setImages] = useState<File[]>([])
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [imageUrls, setImageUrls] = useState<string[]>([])
+  const [existingImages, setExistingImages] = useState<string[]>([])
   const [newImageUrl, setNewImageUrl] = useState('')
   const [newSpecLabel, setNewSpecLabel] = useState('')
   const [newSpecValue, setNewSpecValue] = useState('')
@@ -69,15 +70,20 @@ export default function AdminProductEdit() {
       setSpecsDetail(
         Array.isArray(p.specs_detail) ? (p.specs_detail as any) : []
       )
-      setImagePreviews(Array.isArray(p.img) ? p.img : [])
+      // Set existing images from the product data
+      setExistingImages(Array.isArray(p.img) ? p.img : [])
+      // Clear any previous file uploads when loading existing product
+      setImages([])
+      setImagePreviews([])
     }
   }, [data, isNew])
 
   const onFilesChange = (files: FileList | null) => {
     if (!files) return
     const arr = Array.from(files)
-    setImages(arr)
-    setImagePreviews(arr.map(f => URL.createObjectURL(f)))
+    // Append new files to existing ones instead of replacing
+    setImages(prev => [...prev, ...arr])
+    setImagePreviews(prev => [...prev, ...arr.map(f => URL.createObjectURL(f))])
   }
   const addImageUrl = () => {
     const url = newImageUrl.trim()
@@ -140,11 +146,28 @@ export default function AdminProductEdit() {
           sub_category_id: subCategoryId === '' ? null : Number(subCategoryId),
           color: colorsPayload,
           product_colors: colorsPayload,
-          images
+          img: [...existingImages, ...imageUrls], // Combine existing and new URL images
+          images // New file uploads
         })
       }
       toast.success(isNew ? 'Product created' : 'Product updated')
-      nav('/admin/products')
+      // Try to preserve page from referrer or go back in history
+      if (document.referrer && document.referrer.includes('/admin/products')) {
+        const referrerUrl = new URL(document.referrer)
+        const referrerParams = referrerUrl.searchParams
+        const page = referrerParams.get('page')
+        const q = referrerParams.get('q')
+
+        let backUrl = '/admin/products'
+        const params = new URLSearchParams()
+        if (page) params.set('page', page)
+        if (q) params.set('q', q)
+        if (params.toString()) backUrl += `?${params.toString()}`
+
+        nav(backUrl)
+      } else {
+        nav('/admin/products')
+      }
     } catch (err) {
       toast.error('Failed to save product')
     }
@@ -153,9 +176,11 @@ export default function AdminProductEdit() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">
-          {isNew ? 'Add Product' : 'Edit Product'}
-        </h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-semibold">
+            {isNew ? 'Add Product' : 'Edit Product'}
+          </h1>
+        </div>
         <div className="flex items-center gap-2">
           {!isNew && (
             <button className="px-3 py-2 border rounded">Save to draft</button>
@@ -197,7 +222,7 @@ export default function AdminProductEdit() {
                   }
                 >
                   <option value="">Select category</option>
-                  {catData?.data?.map((c: any) => (
+                  {catData?.data?.categories?.map((c: any) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
@@ -346,46 +371,33 @@ export default function AdminProductEdit() {
         <div className="space-y-4">
           <div className="bg-white rounded border p-4">
             <div className="font-semibold mb-3">Images</div>
-            {isNew ? (
-              <>
-                <div className="flex gap-2">
-                  <input
-                    className="border rounded px-3 py-2 flex-1"
-                    placeholder="Paste image URL"
-                    value={newImageUrl}
-                    onChange={e => setNewImageUrl(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    className="px-3 py-2 border rounded"
-                    onClick={addImageUrl}
-                  >
-                    Add Image
-                  </button>
-                </div>
-                <div className="mt-3 flex gap-2 flex-wrap">
-                  {imageUrls.map((src, i) => (
-                    <div key={i} className="relative">
-                      <img
-                        src={src}
-                        className="h-16 w-16 object-cover rounded border"
-                      />
-                      <button
-                        type="button"
-                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-600 text-white text-xs flex items-center justify-center"
-                        onClick={() => removeImageUrl(i)}
-                        aria-label="Remove image"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="h-32 rounded border flex items-center justify-center text-sm text-gray-500 mb-3">
-                  <label className="px-3 py-2 border rounded cursor-pointer">
+
+            {/* Image URL Input */}
+            <div className="mb-4">
+              <label className="block text-sm mb-2">Add Image URL</label>
+              <div className="flex gap-2">
+                <input
+                  className="border rounded px-3 py-2 flex-1"
+                  placeholder="Paste image URL"
+                  value={newImageUrl}
+                  onChange={e => setNewImageUrl(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="px-3 py-2 border rounded"
+                  onClick={addImageUrl}
+                >
+                  Add URL
+                </button>
+              </div>
+            </div>
+
+            {/* File Upload */}
+            {!isNew && (
+              <div className="mb-4">
+                <label className="block text-sm mb-2">Upload New Images</label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                  <label className="cursor-pointer">
                     <input
                       multiple
                       type="file"
@@ -393,29 +405,107 @@ export default function AdminProductEdit() {
                       className="hidden"
                       onChange={e => onFilesChange(e.target.files)}
                     />
-                    Browse
+                    <div className="text-gray-500">
+                      <div className="text-lg mb-2">📁</div>
+                      <div>Click to browse files or drag and drop</div>
+                      <div className="text-xs mt-1">
+                        PNG, JPG, GIF up to 10MB
+                      </div>
+                    </div>
                   </label>
                 </div>
-                <div className="flex gap-2 flex-wrap">
-                  {imagePreviews.map((src, i) => (
-                    <div key={i} className="relative">
-                      <img
-                        src={src}
-                        className="h-16 w-16 object-cover rounded border"
-                      />
-                      <button
-                        type="button"
-                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-600 text-white text-xs flex items-center justify-center"
-                        onClick={() => removeImagePreview(i)}
-                        aria-label="Remove image"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </>
+              </div>
             )}
+
+            {/* Current Images */}
+            <div>
+              <label className="block text-sm mb-2">Current Images</label>
+              <div className="flex gap-2 flex-wrap">
+                {/* Existing Images from Product */}
+                {existingImages.map((src, i) => (
+                  <div key={`existing-${i}`} className="relative group">
+                    <img
+                      src={src}
+                      className="h-20 w-20 object-cover rounded border"
+                      onError={e => {
+                        e.currentTarget.src =
+                          'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMiAxNkM4LjY4NjI5IDE2IDYgMTMuMzEzNyA2IDEwQzYgNi42ODYyOSA4LjY4NjI5IDQgMTIgNEMxNS4zMTM3IDQgMTggNi42ODYyOSAxOCAxMEMxOCAxMy4zMTM3IDE1LjMxMzcgMTYgMTIgMTZaIiBmaWxsPSIjOUI5QkEwIi8+CjxwYXRoIGQ9Ik0xMiAxNEMxMy4xMDQ2IDE0IDE0IDEzLjEwNDYgMTQgMTJDMTQgMTAuODk1NCAxMy4xMDQ2IDEwIDEyIDEwQzEwLjg5NTQgMTAgMTAgMTAuODk1NCAxMCAxMkMxMCAxMy4xMDQ2IDEwLjg5NTQgMTQgMTIgMTRaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K'
+                      }}
+                    />
+                    <div className="absolute top-0 right-0 bg-purple-500 text-white text-xs px-1 rounded-bl">
+                      EXISTING
+                    </div>
+                    <button
+                      type="button"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-600 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() =>
+                        setExistingImages(prev =>
+                          prev.filter((_, idx) => idx !== i)
+                        )
+                      }
+                      aria-label="Remove image"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+
+                {/* URL Images */}
+                {imageUrls.map((src, i) => (
+                  <div key={`url-${i}`} className="relative group">
+                    <img
+                      src={src}
+                      className="h-20 w-20 object-cover rounded border"
+                      onError={e => {
+                        e.currentTarget.src =
+                          'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMiAxNkM4LjY4NjI5IDE2IDYgMTMuMzEzNyA2IDEwQzYgNi42ODYyOSA4LjY4NjI5IDQgMTIgNEMxNS4zMTM3IDQgMTggNi42ODYyOSAxOCAxMEMxOCAxMy4zMTM3IDE1LjMxMzcgMTYgMTIgMTZaIiBmaWxsPSIjOUI5QkEwIi8+CjxwYXRoIGQ9Ik0xMiAxNEMxMy4xMDQ2IDE0IDE0IDEzLjEwNDYgMTQgMTJDMTQgMTAuODk1NCAxMy4xMDQ2IDEwIDEyIDEwQzEwLjg5NTQgMTAgMTAgMTAuODk1NCAxMCAxMkMxMCAxMy4xMDQ2IDEwLjg5NTQgMTQgMTIgMTRaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K'
+                      }}
+                    />
+                    <div className="absolute top-0 right-0 bg-blue-500 text-white text-xs px-1 rounded-bl">
+                      URL
+                    </div>
+                    <button
+                      type="button"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-600 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removeImageUrl(i)}
+                      aria-label="Remove image"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+
+                {/* File Images */}
+                {imagePreviews.map((src, i) => (
+                  <div key={`file-${i}`} className="relative group">
+                    <img
+                      src={src}
+                      className="h-20 w-20 object-cover rounded border"
+                    />
+                    <div className="absolute top-0 right-0 bg-green-500 text-white text-xs px-1 rounded-bl">
+                      NEW FILE
+                    </div>
+                    <button
+                      type="button"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-600 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removeImagePreview(i)}
+                      aria-label="Remove image"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+
+                {/* Empty state */}
+                {existingImages.length === 0 &&
+                  imageUrls.length === 0 &&
+                  imagePreviews.length === 0 && (
+                    <div className="h-20 w-20 border-2 border-dashed border-gray-300 rounded flex items-center justify-center text-gray-400 text-xs">
+                      No images
+                    </div>
+                  )}
+              </div>
+            </div>
           </div>
 
           <div className="bg-white rounded border p-4">

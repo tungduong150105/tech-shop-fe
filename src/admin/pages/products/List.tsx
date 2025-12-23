@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useState, useMemo } from 'react'
 import { useAdminProducts, useDeleteAdminProduct } from '../../hooks'
 import { Edit3, Trash2, MessageSquare } from 'lucide-react'
@@ -6,22 +6,45 @@ import { toast } from 'sonner'
 import ConfirmModal from '../../../client/components/common/ConfirmModal'
 
 export default function AdminProductsList() {
-  const { data, isLoading } = useAdminProducts({ page: 1, limit: 20 })
-  const del = useDeleteAdminProduct()
-  const [query, setQuery] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [limit] = useState(10)
   const [pendingDelete, setPendingDelete] = useState<number | null>(null)
 
+  // Get parameters from URL
+  const page = parseInt(searchParams.get('page') || '1', 10)
+  const query = searchParams.get('q') || ''
+
+  const { data, isLoading } = useAdminProducts({
+    page,
+    limit,
+    search: query || undefined
+  })
+  const del = useDeleteAdminProduct()
+
   const products = data?.data.products ?? []
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return products
-    const id = Number(q)
-    return products.filter(p => {
-      const matchId = !Number.isNaN(id) && p.id === id
-      const matchName = (p.name || '').toLowerCase().includes(q)
-      return matchId || matchName
-    })
-  }, [products, query])
+  const pages = useMemo(
+    () => Math.max(1, data?.data.pagination.total_pages || 1),
+    [data]
+  )
+
+  // Update URL when page changes
+  const setPage = (newPage: number) => {
+    const params = new URLSearchParams(searchParams)
+    params.set('page', newPage.toString())
+    setSearchParams(params)
+  }
+
+  // Update URL when query changes
+  const setQuery = (newQuery: string) => {
+    const params = new URLSearchParams(searchParams)
+    if (newQuery) {
+      params.set('q', newQuery)
+    } else {
+      params.delete('q')
+    }
+    params.set('page', '1') // Reset to first page when searching
+    setSearchParams(params)
+  }
 
   return (
     <div>
@@ -35,10 +58,10 @@ export default function AdminProductsList() {
             onChange={e => setQuery(e.target.value)}
           />
           <Link
-          to="/admin/products/new"
-          className="px-3 py-2 bg-blue-600 text-white rounded"
-        >
-          New Product
+            to="/admin/products/new"
+            className="px-3 py-2 bg-blue-600 text-white rounded"
+          >
+            New Product
           </Link>
         </div>
       </div>
@@ -81,11 +104,14 @@ export default function AdminProductsList() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map(p => (
+              {products.map(p => (
                 <tr key={p.id} className="border-t">
                   <td className="p-2">
                     {Array.isArray(p.img) && p.img[0] ? (
-                      <img src={p.img[0]} className="h-10 w-10 object-cover rounded border" />
+                      <img
+                        src={p.img[0]}
+                        className="h-10 w-10 object-cover rounded border"
+                      />
                     ) : (
                       <div className="h-10 w-10 rounded border bg-gray-100" />
                     )}
@@ -94,7 +120,8 @@ export default function AdminProductsList() {
                   <td className="p-2">{p.name}</td>
                   <td className="p-2">${p.price}</td>
                   <td className="p-2">
-                    {Array.isArray(p.available_colors) && p.available_colors.length > 0
+                    {Array.isArray(p.available_colors) &&
+                    p.available_colors.length > 0
                       ? p.available_colors.reduce(
                           (sum, c) => sum + Number(c.quantity || 0),
                           0
@@ -103,7 +130,11 @@ export default function AdminProductsList() {
                   </td>
                   <td className="p-2">
                     <div className="flex items-center gap-2">
-                      <Link to={`/admin/products/${p.id}`} title="Edit" className="text-blue-600">
+                      <Link
+                        to={`/admin/products/${p.id}`}
+                        title="Edit"
+                        className="text-blue-600"
+                      >
                         <Edit3 size={16} />
                       </Link>
                       <button
@@ -114,7 +145,11 @@ export default function AdminProductsList() {
                       >
                         <Trash2 size={16} />
                       </button>
-                      <Link to={`/admin/products/${p.id}/reviews`} title="Reviews" className="text-gray-600">
+                      <Link
+                        to={`/admin/products/${p.id}/reviews`}
+                        title="Reviews"
+                        className="text-gray-600"
+                      >
                         <MessageSquare size={16} />
                       </Link>
                     </div>
@@ -123,6 +158,38 @@ export default function AdminProductsList() {
               ))}
             </tbody>
           </table>
+
+          <div className="flex items-center justify-between p-3 border-t text-sm">
+            <button
+              className="px-3 py-1.5 border rounded"
+              disabled={page <= 1}
+              onClick={() => setPage(Math.max(1, page - 1))}
+            >
+              Previous
+            </button>
+            <div className="space-x-1">
+              {Array.from({ length: pages }, (_, i) => i + 1).map(n => (
+                <button
+                  key={n}
+                  className={`px-3 py-1.5 rounded border ${
+                    n === (data?.data.pagination.current_page || 1)
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : ''
+                  }`}
+                  onClick={() => setPage(n)}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+            <button
+              className="px-3 py-1.5 border rounded"
+              disabled={page >= pages}
+              onClick={() => setPage(Math.min(pages, page + 1))}
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
     </div>

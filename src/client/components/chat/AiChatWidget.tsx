@@ -66,24 +66,28 @@ function AiChatWidgetInner() {
       !createChatMutation.isPending
     ) {
       createChatMutation
-        .mutateAsync()
+        .mutateAsync('AI Assistant')
         .then(res => {
           setActiveChatId(res.data.id)
           setAutoCreated(true)
         })
         .catch(err => {
-          toast.error(err?.response?.data?.error || 'Không tạo được hội thoại')
+          toast.error(
+            err?.response?.data?.error || 'Failed to create conversation'
+          )
         })
     }
   }, [isOpen, chatsLoading, chats.length, autoCreated, createChatMutation])
 
   const handleCreateChat = async () => {
     try {
-      const res = await createChatMutation.mutateAsync()
+      const res = await createChatMutation.mutateAsync('AI Assistant')
       setActiveChatId(res.data.id)
       setAutoCreated(true)
     } catch (error: any) {
-      toast.error(error?.response?.data?.error || 'Tạo hội thoại thất bại')
+      toast.error(
+        error?.response?.data?.error || 'Failed to create conversation'
+      )
     }
   }
 
@@ -96,7 +100,7 @@ function AiChatWidgetInner() {
       })
       setMessage('')
     } catch (error: any) {
-      toast.error(error?.response?.data?.error || 'Gửi tin nhắn thất bại')
+      toast.error(error?.response?.data?.error || 'Failed to send message')
     }
   }
 
@@ -108,7 +112,9 @@ function AiChatWidgetInner() {
       }
       setMessage('')
     } catch (error: any) {
-      toast.error(error?.response?.data?.error || 'Xóa hội thoại thất bại')
+      toast.error(
+        error?.response?.data?.error || 'Failed to delete conversation'
+      )
     }
   }
 
@@ -162,7 +168,7 @@ function AiChatWidgetInner() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-24 w-14 h-14 bg-emerald-600 text-white rounded-full shadow-lg hover:bg-emerald-700 transition-all flex items-center justify-center z-50"
+          className="fixed bottom-6 right-24 w-14 h-14 bg-emerald-600 text-white rounded-full shadow-lg hover:bg-emerald-700 transition-all flex items-center justify-center z-[9998]"
           aria-label="Open AI chat"
         >
           <Bot className="w-6 h-6" />
@@ -170,11 +176,11 @@ function AiChatWidgetInner() {
       )}
 
       {isOpen && (
-        <div className="fixed bottom-6 right-24 w-[430px] h-[600px] bg-white rounded-lg shadow-2xl border border-gray-200 z-50 flex flex-col">
+        <div className="fixed bottom-6 right-24 w-[430px] h-[600px] bg-white rounded-lg shadow-2xl border border-gray-200 z-[9998] flex flex-col">
           <div className="flex items-center justify-between px-4 py-3 bg-emerald-600 text-white rounded-t-lg">
             <div className="flex items-center gap-2">
               <Bot className="w-5 h-5" />
-              <span className="font-semibold">AI trợ lý</span>
+              <span className="font-semibold">AI Assistant</span>
             </div>
             <button
               onClick={() => setIsOpen(false)}
@@ -189,8 +195,8 @@ function AiChatWidgetInner() {
             <div className="border-b px-4 py-3 flex items-center gap-2 overflow-x-auto">
               {chatsLoading ? (
                 <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <Loader2 className="w-4 h-4 animate-spin" /> Đang tải hội
-                  thoại...
+                  <Loader2 className="w-4 h-4 animate-spin" /> Loading
+                  conversations...
                 </div>
               ) : (
                 <>
@@ -212,7 +218,7 @@ function AiChatWidgetInner() {
                       <button
                         onClick={() => handleDelete(chat.id)}
                         className="p-1 rounded text-gray-400 hover:text-red-600"
-                        aria-label="Xóa hội thoại"
+                        aria-label="Delete conversation"
                         disabled={deleteChatMutation.isPending}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -224,7 +230,7 @@ function AiChatWidgetInner() {
                     className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm border border-dashed border-emerald-300 text-emerald-700 hover:bg-emerald-50"
                   >
                     <PlusCircle className="w-4 h-4" />
-                    Mới
+                    New
                   </button>
                 </>
               )}
@@ -236,16 +242,16 @@ function AiChatWidgetInner() {
             >
               {messagesLoading ? (
                 <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <Loader2 className="w-4 h-4 animate-spin" /> Đang tải tin
-                  nhắn...
+                  <Loader2 className="w-4 h-4 animate-spin" /> Loading
+                  messages...
                 </div>
               ) : messages.length === 0 ? (
                 <div className="text-center text-gray-500 py-10">
                   <MessageCircle className="w-10 h-10 mx-auto mb-2 text-gray-300" />
                   <p>
                     {selectedChatId
-                      ? 'Bắt đầu trò chuyện với AI trợ lý'
-                      : 'Chưa có hội thoại. Tạo mới để bắt đầu.'}
+                      ? 'Start chatting with AI Assistant'
+                      : 'No conversations yet. Create new to get started.'}
                   </p>
                 </div>
               ) : (
@@ -289,7 +295,7 @@ function AiChatWidgetInner() {
                 <textarea
                   value={message}
                   onChange={e => setMessage(e.target.value)}
-                  placeholder="Nhập tin nhắn..."
+                  placeholder="Type your message..."
                   className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
                   rows={2}
                   onKeyDown={e => {
@@ -316,7 +322,7 @@ function AiChatWidgetInner() {
                 </button>
               </div>
               <p className="text-[11px] text-gray-500 mt-2">
-                Nhấn Enter để gửi, Shift+Enter để xuống dòng.
+                Press Enter to send, Shift+Enter for new line.
               </p>
             </div>
           </div>

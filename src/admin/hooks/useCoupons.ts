@@ -15,16 +15,21 @@ import {
 
 const couponKeys = {
   all: ['admin', 'coupons'] as const,
-  list: ['admin', 'coupons', 'list'] as const,
+  list: (params?: { page?: number; limit?: number; q?: string }) =>
+    [...couponKeys.all, 'list', params] as const,
   detail: (id: number) => [...couponKeys.all, id] as const,
   validate: (payload: ValidateCouponRequest) =>
     [...couponKeys.all, 'validate', payload.code, payload.amount] as const
 }
 
-export function useAdminCoupons() {
+export function useAdminCoupons(params?: {
+  page?: number
+  limit?: number
+  q?: string
+}) {
   return useQuery<{ data: CouponListResponse }, Error>({
-    queryKey: couponKeys.list,
-    queryFn: () => adminCouponService.list()
+    queryKey: couponKeys.list(params),
+    queryFn: () => adminCouponService.list(params)
   })
 }
 
@@ -38,7 +43,11 @@ export function useAdminCoupon(id: number) {
 
 export function useCreateAdminCoupon() {
   const qc = useQueryClient()
-  return useMutation<{ data: CreateCouponResponse }, Error, CreateCouponRequest>({
+  return useMutation<
+    { data: CreateCouponResponse },
+    Error,
+    CreateCouponRequest
+  >({
     mutationFn: payload => adminCouponService.create(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: couponKeys.all })
@@ -48,7 +57,11 @@ export function useCreateAdminCoupon() {
 
 export function useUpdateAdminCoupon(id: number) {
   const qc = useQueryClient()
-  return useMutation<{ data: UpdateCouponResponse }, Error, UpdateCouponRequest>({
+  return useMutation<
+    { data: UpdateCouponResponse },
+    Error,
+    UpdateCouponRequest
+  >({
     mutationFn: payload => adminCouponService.update(id, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: couponKeys.detail(id) })
@@ -67,12 +80,13 @@ export function useDeleteAdminCoupon() {
   })
 }
 
-export function useValidateCoupon(payload: ValidateCouponRequest, enabled = true) {
+export function useValidateCoupon(
+  payload: ValidateCouponRequest,
+  enabled = true
+) {
   return useQuery<{ data: ValidateCouponResponse }, Error>({
     queryKey: couponKeys.validate(payload),
     queryFn: () => adminCouponService.validate(payload),
     enabled
   })
 }
-
-

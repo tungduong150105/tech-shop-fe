@@ -5,7 +5,7 @@ import { useCreateAdminProduct, useAdminCategories } from '../../hooks'
 export default function AdminProductCreate() {
   const nav = useNavigate()
   const create = useCreateAdminProduct()
-  const { data: catData } = useAdminCategories()
+  const { data: catData } = useAdminCategories({ limit: 100 })
 
   const [name, setName] = useState('')
   const [price, setPrice] = useState<number>(0)
@@ -95,7 +95,7 @@ export default function AdminProductCreate() {
                   }
                 >
                   <option value="">Select category</option>
-                  {catData?.data?.map((c: any) => (
+                  {catData?.data?.categories?.map((c: any) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
@@ -104,12 +104,14 @@ export default function AdminProductCreate() {
               </div>
               <div>
                 <label className="block text-sm mb-1">Product Price</label>
-              <input
-                type="number"
-                className="w-full border rounded px-3 py-2"
-                value={price === 0 ? '' : price}
-                onChange={e => setPrice(e.target.value === '' ? 0 : Number(e.target.value))}
-              />
+                <input
+                  type="number"
+                  className="w-full border rounded px-3 py-2"
+                  value={price === 0 ? '' : price}
+                  onChange={e =>
+                    setPrice(e.target.value === '' ? 0 : Number(e.target.value))
+                  }
+                />
               </div>
             </div>
           </div>

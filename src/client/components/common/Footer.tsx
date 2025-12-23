@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { usePublicSettings } from '../../hooks/useSettings'
 
 // @ts-ignore
 import LocationIcon from '../../../assets/location-icon.svg'
@@ -22,6 +23,20 @@ import CompanyIcon from '../../../assets/company-icon.svg'
 
 const Footer = () => {
   const [email, setEmail] = useState('')
+  const { data: settingsData } = usePublicSettings('general')
+
+  // Extract settings with fallback values
+  const settings = settingsData?.settings || {}
+  const companyName = settings.company_name || 'Tech Heim'
+  const companyAddress =
+    settings.company_address || '123 Main Street, Anytown, USA'
+  const companyPhone = settings.company_phone || '+1 (555) 123-4567'
+  const companyEmail = settings.company_email || 'TechHeimSupport@gmail.com'
+  const facebookUrl = settings.facebook_url || '#'
+  const instagramUrl = settings.instagram_url || '#'
+  const twitterUrl = settings.twitter_url || '#'
+  const copyrightYear = settings.copyright_year || '2023'
+
   return (
     <footer className="border-t bg-gradient-to-b from-blue-950 to-blue-900 pt-5">
       <div className="container grid gird-cols-1 xl:grid-cols-4 gap-8 px-14">
@@ -46,23 +61,23 @@ const Footer = () => {
               alt="location-icon"
               className="w-4 h-4 mr-2 mt-1"
             />
-            <p className="text-nowrap">123 Main Street, Anytown, USA</p>
+            <p className="text-nowrap">{companyAddress}</p>
           </div>
           <div className="inline-flex">
             <img
               src={PhoneIcon}
-              alt="location-icon"
+              alt="phone-icon"
               className="w-4 h-4 mr-2 mt-1"
             />
-            <p>+1 (555) 123-4567</p>
+            <p>{companyPhone}</p>
           </div>
           <div className="inline-flex">
             <img
               src={EmailIcon}
-              alt="location-icon"
+              alt="email-icon"
               className="w-4 h-4 mr-2 mt-1"
             />
-            <p>TechHeimSupport@gmail.com</p>
+            <p>{companyEmail}</p>
           </div>
         </div>
         <div className="flex flex-col text-white font-thin space-y-1">
@@ -79,13 +94,28 @@ const Footer = () => {
             />
           </div>
           <div className="inline-flex space-x-5 pt-3">
-            <a href="#" className="hover:text-gray-300">
+            <a
+              href={facebookUrl}
+              className="hover:text-gray-300"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <TbBrandMeta className="h-7 w-7" />
             </a>
-            <a href="#" className="hover:text-gray-300">
+            <a
+              href={instagramUrl}
+              className="hover:text-gray-300"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <IoLogoInstagram className="h-7 w-7" />
             </a>
-            <a href="#" className="hover:text-gray-300">
+            <a
+              href={twitterUrl}
+              className="hover:text-gray-300"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <RiTwitterXLine className="h-7 w-7" />
             </a>
           </div>
@@ -94,10 +124,10 @@ const Footer = () => {
       <div className="gap-3 pl-12">
         <div className="inline-flex">
           <img src={PayPayIcon} alt="paypal-icon" className="h-8 mt-8 mx-2" />
-          <img src={VisaIcon} alt="paypal-icon" className="h-8 mt-8 mx-2" />
+          <img src={VisaIcon} alt="visa-icon" className="h-8 mt-8 mx-2" />
           <img
             src={MasterCardIcon}
-            alt="paypal-icon"
+            alt="mastercard-icon"
             className="h-8 mt-8 mx-2"
           />
         </div>
@@ -105,12 +135,14 @@ const Footer = () => {
       <div className="bg-blue-950 flex flex-row justify-between text-white font-thin text-sm mt-5 py-4 pl-14">
         <div className="inline-flex gap-3">
           <img src={CompanyIcon} alt="company-icon" className="w-5 h-5" />
-          <p>2023 Tech Heim.</p>
+          <p>
+            {copyrightYear} {companyName}.
+          </p>
         </div>
         <div className="inline-flex space-x-6 mr-[100px]">
           <p>cookie settings</p>
           <p>Privacy Policy</p>
-          <p>Terms ans Conditions</p>
+          <p>Terms and Conditions</p>
         </div>
       </div>
     </footer>

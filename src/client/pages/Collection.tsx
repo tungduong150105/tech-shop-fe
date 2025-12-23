@@ -1,14 +1,17 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import CategoryNav from '../components/collection/CategoryNav'
 import FilterTagsBar from '../components/collection/FilterTagsBar'
 import SidebarFilters from '../components/collection/SidebarFilters'
 import SortDropdown from '../components/collection/SortDropdown'
 import ProductGrid from '../components/collection/ProductGrid'
 import Pagination from '../components/collection/Pagination'
-import { ProductGridSkeleton, SectionSkeleton } from '../components/common/LoadingSkeleton'
+import {
+  ProductGridSkeleton,
+  SectionSkeleton
+} from '../components/common/LoadingSkeleton'
 
 import { useCollectionProducts, useSearchProducts } from '../hooks/useProducts'
-import { useCategories } from '../hooks/useCategories'
+import { useCategories, useCategoryBySlug } from '../hooks/useCategories'
 import { useFilters } from '../hooks/useFilters'
 import { ListProductRes } from '../types/product'
 
@@ -21,15 +24,26 @@ export type DynamicFilters = {
 }
 
 const Collection = () => {
-  const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [sortBy, setSortBy] = useState<string>('featured')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-
   const { collection } = useParams<{ collection: string }>()
-  const categoryId =
-    collection && collection !== 'all' ? parseInt(collection) : undefined
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // Get category data by slug (if not 'all')
+  const { data: categoryData, isLoading: isCategoryLoading } =
+    useCategoryBySlug(collection || '')
+  const categoryId = categoryData?.id ? Number(categoryData.id) : undefined
+
+  // Determine the collection parameter for products API
+  const collectionParam = useMemo(() => {
+    if (collection === 'all') return 'all'
+    if (categoryId) return categoryId.toString()
+    // If we're loading category data, don't make products call yet
+    if (collection && collection !== 'all' && isCategoryLoading) return null
+    return 'all' // fallback
+  }, [collection, categoryId, isCategoryLoading])
+
+  // Get parameters from URL
+  const currentPage = parseInt(searchParams.get('page') || '1', 10)
+  const sortBy = searchParams.get('sort') || 'featured'
   const searchQuery = useMemo(
     () => (searchParams.get('search') || '').trim(),
     [searchParams]
@@ -37,11 +51,11 @@ const Collection = () => {
 
   // Fetch categories and filters from API
   const { data: categoriesData } = useCategories()
-  const {
-    data: filtersData,
-    isLoading: isLoadingFilters,
-    error: filtersError
-  } = useFilters(categoryId)
+  // Only pass categoryId if we're not on "All" collection
+  // This ensures global filters only show on "All" collection
+  const { data: filtersData, isLoading: isLoadingFilters } = useFilters(
+    collection === 'all' ? undefined : categoryId
+  )
 
   // Map filter data from API to dynamic format
   const filterOptions = useMemo(() => {
@@ -69,7 +83,7 @@ const Collection = () => {
       const key = item.key || ''
       const label =
         item.label ||
-        key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+        key.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
       const values = Array.isArray(item.options) ? item.options : []
 
       if (values.length === 0) return
@@ -92,10 +106,38 @@ const Collection = () => {
     return options
   }, [filtersData])
 
-  // Initialize filters state dynamically
-  const [filters, setFilters] = useState<DynamicFilters>({
-    selected: {},
-    options: {}
+  // Initialize filters from URL parameters
+  const getFiltersFromURL = useCallback(() => {
+    const selected: Record<string, string[]> = {}
+    const tags: string[] = []
+
+    // Parse filter parameters from URL
+    searchParams.forEach((value, key) => {
+      // Skip non-filter parameters
+      if (['page', 'sort', 'search'].includes(key)) return
+
+      // URLSearchParams already decodes values, no need to decode again
+      const values = value.split(',').filter(v => v.trim())
+      if (values.length > 0) {
+        selected[key] = values
+        tags.push(...values)
+      }
+    })
+
+    return { selected, tags }
+  }, [searchParams])
+
+  const [filters, setFilters] = useState<DynamicFilters>(() => {
+    const { selected } = getFiltersFromURL()
+    return {
+      selected,
+      options: {}
+    }
+  })
+
+  const [selectedTags, setSelectedTags] = useState<string[]>(() => {
+    const { tags } = getFiltersFromURL()
+    return tags
   })
 
   // Update filter options when API data changes
@@ -106,14 +148,34 @@ const Collection = () => {
     }))
   }, [filterOptions])
 
-  // Map categories from API to CategoryNav format
+  // Update filters when URL changes
+  useEffect(() => {
+    const { selected, tags } = getFiltersFromURL()
+    setFilters(prev => ({
+      ...prev,
+      selected
+    }))
+    setSelectedTags(tags)
+  }, [getFiltersFromURL])
+
+  // Map categories from API to CategoryNav format with "All" option
   const categories = useMemo(() => {
-    if (!categoriesData || categoriesData.length === 0) return []
-    return categoriesData.map(cat => ({
+    const allCategory = {
+      id: 0, // Use 0 or 'all' as identifier for all products
+      name: 'All',
+      image_url: '' // You can add an icon for "All" if needed
+    }
+
+    if (!categoriesData || categoriesData.length === 0) return [allCategory]
+
+    const mappedCategories = categoriesData.map(cat => ({
       id: cat.id,
       name: cat.name,
+      slug: cat.slug,
       image_url: cat.image_url
     }))
+
+    return [allCategory, ...mappedCategories]
   }, [categoriesData])
 
   const sortOptions = [
@@ -139,12 +201,14 @@ const Collection = () => {
   const [filterString, setFilterString] = useState<string>('')
   const [products, setProducts] = useState<ListProductRes>()
   const { data: allProducts, isLoading } = useCollectionProducts(
-    collection || 'all',
+    collectionParam || 'all',
     sortBy,
     filterString,
     currentPage,
-    15
+    12,
+    !!collectionParam // enable query only if collectionParam exists
   )
+
   const { data: searchResults, isLoading: isSearching } = useSearchProducts(
     searchQuery,
     {
@@ -155,18 +219,33 @@ const Collection = () => {
     }
   )
 
+  // Update URL when page changes
+  const setCurrentPage = (newPage: number) => {
+    const params = new URLSearchParams(searchParams)
+    params.set('page', newPage.toString())
+    setSearchParams(params)
+  }
+
+  // Update URL when sort changes
+  const setSortBy = (newSort: string) => {
+    const params = new URLSearchParams(searchParams)
+    params.set('sort', newSort)
+    params.set('page', '1') // Reset to first page when sorting changes
+    setSearchParams(params)
+  }
+
   useEffect(() => {
     if (searchQuery) {
-      setCurrentPage(1)
+      const params = new URLSearchParams(searchParams)
+      params.set('page', '1')
+      setSearchParams(params)
     }
-  }, [searchQuery])
+  }, [searchQuery, searchParams, setSearchParams])
 
   useEffect(() => {
     const source = searchQuery ? searchResults : allProducts
     if (source) {
       setProducts(source)
-      const total = source.pagination?.total_pages || 1
-      setTotalPages(total)
     }
   }, [allProducts, searchResults, searchQuery])
 
@@ -182,74 +261,101 @@ const Collection = () => {
     Object.keys(filters.selected).forEach(filterKey => {
       const selectedValues = filters.selected[filterKey]
       if (selectedValues && selectedValues.length > 0) {
-        // Use the filter key directly (backend will match it with FilterOption table)
-        filterParts.push(`${filterKey}=${selectedValues.join(',')}`)
+        // Properly encode each value to handle special characters like + and spaces
+        const encodedValues = selectedValues.map(value =>
+          encodeURIComponent(value)
+        )
+        const filterPart = `${filterKey}=${encodedValues.join(',')}`
+        filterParts.push(filterPart)
       }
     })
 
-    return filterParts.join('&')
+    const result = filterParts.join('&')
+
+    return result
   }, [filters.selected])
 
+  // Update filter string when URL changes
   useEffect(() => {
     const newFilterString = convertFilterArrayToString()
     setFilterString(newFilterString)
-    setCurrentPage(1) // Reset to page 1 when filters or sort change
-  }, [sortBy, convertFilterArrayToString])
+  }, [convertFilterArrayToString])
 
-  // Dynamic filter change handler
+  // Dynamic filter change handler - updates URL
   const handleFilterChange = (filterKey: string, value: string) => {
-    setFilters(prev => {
-      const newSelected = { ...prev.selected }
-      const currentValues = newSelected[filterKey] || []
+    const params = new URLSearchParams(searchParams)
+    const currentValues =
+      params
+        .get(filterKey)
+        ?.split(',')
+        .filter(v => v.trim()) || []
 
-      if (currentValues.includes(value)) {
-        // Remove value
-        newSelected[filterKey] = currentValues.filter(v => v !== value)
-        setSelectedTags(prevTags => prevTags.filter(t => t !== value))
-      } else {
-        // Add value
-        newSelected[filterKey] = [...currentValues, value]
-        setSelectedTags(prevTags => {
-          if (!prevTags.includes(value)) {
-            return [...prevTags, value]
-          }
-          return prevTags
-        })
-      }
+    let newValues: string[]
+    if (currentValues.includes(value)) {
+      // Remove value
+      newValues = currentValues.filter(v => v !== value)
+    } else {
+      // Add value
+      newValues = [...currentValues, value]
+    }
 
-      return {
-        ...prev,
-        selected: newSelected
-      }
-    })
+    // Update URL parameters
+    if (newValues.length > 0) {
+      params.set(filterKey, newValues.join(','))
+    } else {
+      params.delete(filterKey)
+    }
+
+    // Reset to page 1 when filters change
+    params.set('page', '1')
+
+    setSearchParams(params)
   }
 
   const handleClearAll = () => {
-    setFilters(prev => ({
-      ...prev,
-      selected: {}
-    }))
-    setSelectedTags([])
-    setCurrentPage(1) // Reset to page 1 when clearing filters
+    const params = new URLSearchParams(searchParams)
+
+    // Remove all filter parameters (keep page, sort, search)
+    const keysToKeep = ['page', 'sort', 'search']
+    const newParams = new URLSearchParams()
+
+    keysToKeep.forEach(key => {
+      const value = params.get(key)
+      if (value) {
+        newParams.set(key, value)
+      }
+    })
+
+    // Reset to page 1
+    newParams.set('page', '1')
+    setSearchParams(newParams)
   }
 
   const removeTag = (tag: string) => {
-    setSelectedTags(prev => prev.filter(t => t !== tag))
+    const params = new URLSearchParams(searchParams)
 
-    // Find and remove tag from all filter keys
-    setFilters(prev => {
-      const newSelected = { ...prev.selected }
-      Object.keys(newSelected).forEach(key => {
-        newSelected[key] = newSelected[key].filter(v => v !== tag)
-        if (newSelected[key].length === 0) {
-          delete newSelected[key]
+    // Find and remove tag from all filter parameters
+    let found = false
+    params.forEach((value, key) => {
+      if (['page', 'sort', 'search'].includes(key)) return
+
+      const values = value.split(',').filter(v => v.trim())
+      if (values.includes(tag)) {
+        const newValues = values.filter(v => v !== tag)
+        if (newValues.length > 0) {
+          params.set(key, newValues.join(','))
+        } else {
+          params.delete(key)
         }
-      })
-      return {
-        ...prev,
-        selected: newSelected
+        found = true
       }
     })
+
+    if (found) {
+      // Reset to page 1 when removing filter
+      params.set('page', '1')
+      setSearchParams(params)
+    }
   }
 
   return (
@@ -258,14 +364,22 @@ const Collection = () => {
       <FilterTagsBar tags={selectedTags} onRemoveTag={removeTag} />
 
       <div className="max-w-7xl mx-auto px-6 py-6 flex gap-8">
-        <SidebarFilters
-          filters={filters}
-          onFilterChange={handleFilterChange}
-          onClearAll={handleClearAll}
-          isLoading={isLoadingFilters}
-        />
+        {(isLoadingFilters || Object.keys(filters.options).length > 0) && (
+          <SidebarFilters
+            filters={filters}
+            onFilterChange={handleFilterChange}
+            onClearAll={handleClearAll}
+            isLoading={isLoadingFilters}
+          />
+        )}
 
-        <div className="flex-1">
+        <div
+          className={`flex-1 ${
+            !(isLoadingFilters || Object.keys(filters.options).length > 0)
+              ? 'max-w-none'
+              : ''
+          }`}
+        >
           <div className="flex justify-end mb-6">
             <SortDropdown
               options={sortOptions}
@@ -306,15 +420,18 @@ const Collection = () => {
                   <ProductGrid products={products.products} />
 
                   {/* Pagination - Always show if we have pagination data */}
-                  {products.pagination && (
-                    <div className="mt-8 pt-6 border-t border-gray-200">
-                      <Pagination
-                        currentPage={currentPage}
-                        totalPages={products.pagination.total_pages}
-                        onPageChange={setCurrentPage}
-                      />
-                    </div>
-                  )}
+                  {products.pagination &&
+                    products.pagination.total_pages > 1 && (
+                      <div className="mt-8 pt-6 border-t border-gray-200">
+                        <Pagination
+                          currentPage={currentPage}
+                          totalPages={products.pagination.total_pages}
+                          onPageChange={setCurrentPage}
+                          total={products.pagination.total_count}
+                          pageSize={products.pagination.per_page}
+                        />
+                      </div>
+                    )}
                 </>
               )}
             </>

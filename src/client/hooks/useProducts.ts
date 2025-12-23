@@ -5,6 +5,7 @@ import {
   fetchCollectionProducts,
   fetchProductById,
   fetchSimilarProducts,
+  fetchSimilarProductsByCategory,
   fetchReview,
   searchProducts,
   fetchProductsByCategory
@@ -31,11 +32,14 @@ export const useCollectionProducts = (
   sort: string,
   filter: string,
   page: number,
-  limit: number
+  limit: number,
+  enabled: boolean = true
 ) =>
   useQuery<ListProductRes>({
     queryKey: ['collectionProducts', category_id, sort, filter, page, limit],
-    queryFn: () => fetchCollectionProducts(category_id, sort, filter, page, limit),
+    queryFn: () =>
+      fetchCollectionProducts(category_id, sort, filter, page, limit),
+    enabled: enabled && !!category_id,
     staleTime: 5 * 60 * 1000
   })
 
@@ -47,10 +51,19 @@ export const useProductById = (productId: number) =>
     staleTime: 10 * 60 * 1000
   })
 
-export const useSimilarProducts = (categoryId: number) =>
+export const useSimilarProducts = (productId: number, limit?: number) =>
   useQuery<ListProductRes>({
-    queryKey: ['similarProducts', categoryId],
-    queryFn: () => fetchSimilarProducts(categoryId),
+    queryKey: ['similarProducts', productId, limit],
+    queryFn: () => fetchSimilarProducts(productId, limit),
+    enabled: !!productId,
+    staleTime: 5 * 60 * 1000
+  })
+
+// Legacy hook for category-based similar products
+export const useSimilarProductsByCategory = (categoryId: number) =>
+  useQuery<ListProductRes>({
+    queryKey: ['similarProductsByCategory', categoryId],
+    queryFn: () => fetchSimilarProductsByCategory(categoryId),
     enabled: !!categoryId,
     staleTime: 5 * 60 * 1000
   })

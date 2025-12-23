@@ -11,6 +11,11 @@ export const fetchCategoryById = async (id: number): Promise<any> => {
   return data
 }
 
+export const fetchCategoryBySlug = async (slug: string): Promise<any> => {
+  const { data } = await axiosClient.get(`/categories/slug/${slug}`)
+  return data
+}
+
 export const fetchSubCategoriesByCategory = async (
   categoryId: number
 ): Promise<any> => {

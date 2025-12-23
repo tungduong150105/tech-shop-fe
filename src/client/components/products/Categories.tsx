@@ -1,20 +1,20 @@
 import { useCategories } from '../../hooks/useCategories'
-import { useNavigate } from "react-router-dom"
+import { useNavigate } from 'react-router-dom'
 
 const Categories = () => {
   const { data: categoriesList = [] } = useCategories()
 
   const navigate = useNavigate()
 
-  function goTo(id: number) {
-    navigate(`/collection/${id}`)
+  function goTo(slug: string) {
+    navigate(`/collection/${slug}`)
   }
 
   return (
     <div className="none lg:flex flex-row gap-[30px] items-center justify-center p-10">
       {categoriesList.map(category => (
         <div
-          onClick={() => goTo(category.id)}
+          onClick={() => goTo(category.slug)}
           key={category.id}
           className="flex flex-col items-center shadow rounded-lg px-4 py-4 cursor-pointer"
         >

@@ -8,10 +8,14 @@ import {
 } from '../services/wishlistService'
 
 export const useWishlist = () => {
+  const hasToken = !!localStorage.getItem('accessToken')
+
   return useQuery<WishlistResponse, Error>({
     queryKey: ['wishlist'],
     queryFn: getWishlist,
+    enabled: hasToken, // Only fetch if user is logged in
     staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: false
   })
 }
 
@@ -44,4 +48,3 @@ export const useClearWishlist = () => {
     }
   })
 }
-

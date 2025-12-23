@@ -11,14 +11,19 @@ const StarIcon = () => (
   </svg>
 )
 
-const ProductSimilar = (categoryId: number) => {
-  const { data: product, isLoading, error } = useSimilarProducts(categoryId);
-  
-  const listProducts = product?.products || [];
+interface ProductSimilarProps {
+  productId: number
+}
+
+const ProductSimilar = ({ productId }: ProductSimilarProps) => {
+  const { data: product, isLoading, error } = useSimilarProducts(productId, 8)
+
+  const listProducts = product?.products || []
 
   const [currentIndex, setCurrentIndex] = useState(0)
   const next = () => {
-    if (currentIndex < listProducts.length - 4) setCurrentIndex(currentIndex + 1)
+    if (currentIndex < listProducts.length - 4)
+      setCurrentIndex(currentIndex + 1)
   }
 
   const prev = () => {
@@ -55,25 +60,29 @@ const ProductSimilar = (categoryId: number) => {
                 className="min-w-[250px] bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition p-3"
                 onClick={() => onClickProduct(p.id)}
               >
-                <div className="inline-flex">
-                  <img
-                    src={p.img[0]}
-                    alt={p.name}
-                    className="w-full h-40 object-contain mb-3"
-                  />
+                <div className="relative mb-3">
+                  <div className="w-full h-40 bg-gray-50 rounded-lg overflow-hidden">
+                    <img
+                      src={p.img[0]}
+                      alt={p.name}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
 
                   {/* Product colors */}
                   {p.color.length > 0 && (
-                    <div className="flex flex-col items-center gap-2 mb-3 justify-center">
+                    <div className="absolute bottom-2 right-2 flex gap-1">
                       {p.color.slice(0, 3).map((color, i) => (
                         <span
                           key={i}
-                          className="h-4 w-4 rounded-full border border-gray-300"
+                          className="h-3 w-3 rounded-full border-2 border-white shadow-sm"
                           style={{ backgroundColor: color.code }}
                         />
                       ))}
                       {p.color.length > 3 && (
-                        <span className="text-gray-500 text-sm">+</span>
+                        <span className="text-xs bg-white/90 backdrop-blur-sm px-1.5 py-0.5 rounded-full text-gray-600 font-medium">
+                          +{p.color.length - 3}
+                        </span>
                       )}
                     </div>
                   )}
@@ -82,8 +91,18 @@ const ProductSimilar = (categoryId: number) => {
                 <p className="text-sm text-gray-700 mb-1 line-clamp-2 h-10">
                   {p.name}
                 </p>
+                {p.description && (
+                  <p className="text-xs text-gray-500 mb-2 line-clamp-2 leading-relaxed">
+                    {p.description.length > 60
+                      ? `${p.description.substring(0, 60)}...`
+                      : p.description}
+                  </p>
+                )}
                 <p className="text-gray-900 font-semibold mb-1">
-                  ${p.price.toFixed(2)}
+                  $
+                  {p.final_price
+                    ? p.final_price.toFixed(2)
+                    : p.price.toFixed(2)}
                 </p>
 
                 <div className="flex items-center justify-end text-sm font-medium text-gray-600">

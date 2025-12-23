@@ -1,5 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import { fetchCategories, fetchCategoryById, fetchSubCategoriesByCategory } from '../services/categoryService'
+import {
+  fetchCategories,
+  fetchCategoryById,
+  fetchCategoryBySlug,
+  fetchSubCategoriesByCategory
+} from '../services/categoryService'
 import type { Categories } from '../types/category'
 
 export const useCategories = () =>
@@ -14,6 +19,14 @@ export const useCategoryById = (id: number) =>
     queryKey: ['category', id],
     queryFn: () => fetchCategoryById(id),
     enabled: !!id,
+    staleTime: 5 * 60 * 1000
+  })
+
+export const useCategoryBySlug = (slug: string) =>
+  useQuery<any>({
+    queryKey: ['category', 'slug', slug],
+    queryFn: () => fetchCategoryBySlug(slug),
+    enabled: !!slug && slug !== 'all',
     staleTime: 5 * 60 * 1000
   })
 

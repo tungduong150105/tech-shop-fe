@@ -1,4 +1,4 @@
-import { Category } from "./category"
+import { Category } from './category'
 
 export type Product = {
   id: number
@@ -17,6 +17,7 @@ export type Product = {
   available_colors?: { name: string; code: string; quantity?: number }[]
   category_id: number
   sub_category_id: number
+  description: string
 }
 
 export type Pagination = {

@@ -1,9 +1,13 @@
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Heart, ShoppingCart, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAddToCart } from '../../hooks/useCart'
-import { useAddToWishlist, useRemoveFromWishlist, useWishlist } from '../../hooks/useWishlist'
+import {
+  useAddToWishlist,
+  useRemoveFromWishlist,
+  useWishlist
+} from '../../hooks/useWishlist'
 import { useValidateToken } from '../../hooks/useAuth'
 
 interface ProductProps {
@@ -15,7 +19,14 @@ interface ProductProps {
   quantity: number // total (fallback)
 }
 
-const Payment = ({ discount, price, selectedColor, colors, id, quantity }: ProductProps) => {
+const Payment = ({
+  discount,
+  price,
+  selectedColor,
+  colors,
+  id,
+  quantity
+}: ProductProps) => {
   const navigate = useNavigate()
   const addToCartMutation = useAddToCart()
   const addToWishlistMutation = useAddToWishlist()
@@ -23,11 +34,28 @@ const Payment = ({ discount, price, selectedColor, colors, id, quantity }: Produ
   const { data: wishlistData } = useWishlist()
   const { data: userData } = useValidateToken()
 
-  const isInWishlist = wishlistData?.items?.some(item => item.product.id === id.toString()) || false
+  const isInWishlist = useMemo(() => {
+    if (!wishlistData?.items || !Array.isArray(wishlistData.items)) {
+      return false
+    }
+
+    return wishlistData.items.some(item => {
+      const itemProductId = item.product.id
+      const currentProductId = id.toString()
+
+      // Try different comparison methods to be safe
+      return (
+        itemProductId === currentProductId || parseInt(itemProductId) === id
+      )
+    })
+  }, [wishlistData?.items, id])
+
   const finalPrice = Number(((price * (100 - discount)) / 100).toFixed(2))
 
   const selectedColorObj = useMemo(
-    () => colors.find(c => c.name === selectedColor) || (colors.length ? colors[0] : undefined),
+    () =>
+      colors.find(c => c.name === selectedColor) ||
+      (colors.length ? colors[0] : undefined),
     [colors, selectedColor]
   )
   const selectedQty = selectedColorObj?.quantity ?? quantity
@@ -44,7 +72,8 @@ const Payment = ({ discount, price, selectedColor, colors, id, quantity }: Produ
       return
     }
 
-    const colorPayload = selectedColorObj && selectedColorObj.name ? selectedColorObj : null
+    const colorPayload =
+      selectedColorObj && selectedColorObj.name ? selectedColorObj : null
 
     addToCartMutation.mutate(
       {
@@ -83,7 +112,8 @@ const Payment = ({ discount, price, selectedColor, colors, id, quantity }: Produ
       return
     }
 
-    const colorPayload = selectedColorObj && selectedColorObj.name ? selectedColorObj : null
+    const colorPayload =
+      selectedColorObj && selectedColorObj.name ? selectedColorObj : null
 
     // Add to cart first, then navigate to checkout
     addToCartMutation.mutate(
@@ -124,7 +154,9 @@ const Payment = ({ discount, price, selectedColor, colors, id, quantity }: Produ
           toast.success('Removed from wishlist')
         },
         onError: (err: any) => {
-          toast.error(err?.response?.data?.message || 'Failed to remove from wishlist')
+          toast.error(
+            err?.response?.data?.message || 'Failed to remove from wishlist'
+          )
         }
       })
     } else {
@@ -133,7 +165,9 @@ const Payment = ({ discount, price, selectedColor, colors, id, quantity }: Produ
           toast.success('Added to wishlist')
         },
         onError: (err: any) => {
-          toast.error(err?.response?.data?.message || 'Failed to add to wishlist')
+          toast.error(
+            err?.response?.data?.message || 'Failed to add to wishlist'
+          )
         }
       })
     }
@@ -208,65 +242,27 @@ const Payment = ({ discount, price, selectedColor, colors, id, quantity }: Produ
 
           <button
             onClick={handleToggleWishlist}
-            disabled={!userData?.user || addToWishlistMutation.isPending || removeFromWishlistMutation.isPending}
+            disabled={
+              !userData?.user ||
+              addToWishlistMutation.isPending ||
+              removeFromWishlistMutation.isPending
+            }
             className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-lg font-semibold border-2 transition-all ${
               isInWishlist
-                ? 'bg-red-50 text-red-600 border-red-300 hover:bg-red-100'
+                ? 'bg-red-600 text-white border-none hover:bg-red-500'
                 : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
             } ${!userData?.user ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <Heart
-              className={`w-5 h-5 ${isInWishlist ? 'fill-red-600' : ''}`}
+              className={`w-5 h-5 ${isInWishlist ? 'fill-current' : ''}`}
             />
-            {addToWishlistMutation.isPending || removeFromWishlistMutation.isPending
+            {addToWishlistMutation.isPending ||
+            removeFromWishlistMutation.isPending
               ? 'Processing...'
               : isInWishlist
-              ? 'Remove from Wishlist'
+              ? 'Added to Wishlist'
               : 'Add to Wishlist'}
           </button>
-        </div>
-
-        {/* Features */}
-        <div className="mt-6 pt-6 border-t border-gray-200 space-y-3">
-          <div className="flex items-center gap-3 text-sm text-gray-600">
-            <div className="w-5 h-5 flex items-center justify-center">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-            <span>Guaranteed Authentic</span>
-          </div>
-          <div className="flex items-center gap-3 text-sm text-gray-600">
-            <div className="w-5 h-5 flex items-center justify-center">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 10V3L4 14h7v7l9-11h-7z"
-                />
-              </svg>
-            </div>
-            <span>Fast & Free Delivery</span>
-          </div>
-          <div className="flex items-center gap-3 text-sm text-gray-600">
-            <div className="w-5 h-5 flex items-center justify-center">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-            <span>1 Year Warranty</span>
-          </div>
         </div>
       </div>
     </div>

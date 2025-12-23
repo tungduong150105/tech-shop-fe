@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { User, Mail, Phone, Key, Home, MapPin, Edit2, X } from 'lucide-react'
 import { useValidateToken, useUpdateProfile } from '../../hooks/useAuth'
 import { toast } from 'sonner'
@@ -162,7 +162,7 @@ export default function Profile() {
   const [showPhoneModal, setShowPhoneModal] = useState(false)
   const [showAddressModal, setShowAddressModal] = useState(false)
   const [showPostalCodeModal, setShowPostalCodeModal] = useState(false)
-  
+
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [fullName, setFullName] = useState('')
@@ -187,11 +187,6 @@ export default function Profile() {
       setAddress(userData.user.address || '')
       setAddressEdit(userData.user.address || '')
       // Load postal code from localStorage
-      const savedPostalCode = localStorage.getItem(`postalCode_${userData.user.id}`)
-      if (savedPostalCode) {
-        setPostalCode(savedPostalCode)
-        setPostalCodeEdit(savedPostalCode)
-      }
     }
   }, [userData])
 
@@ -231,16 +226,6 @@ export default function Profile() {
       toast.success('Address updated successfully')
     } catch (error: any) {
       toast.error(error?.message || 'Failed to update address')
-    }
-  }
-
-  const handleSavePostalCode = async () => {
-    // Save postal code to localStorage since it's not in the backend
-    if (userData?.user?.id) {
-      localStorage.setItem(`postalCode_${userData.user.id}`, postalCodeEdit)
-      setPostalCode(postalCodeEdit)
-      setShowPostalCodeModal(false)
-      toast.success('Postal code updated successfully')
     }
   }
 
@@ -296,7 +281,6 @@ export default function Profile() {
                   <Mail className="w-5 h-5 text-gray-400" />
                   <span className="text-gray-700">{email}</span>
                 </div>
-               
               </div>
             </div>
           </div>
@@ -335,7 +319,6 @@ export default function Profile() {
                   <Key className="w-5 h-5 text-gray-400" />
                   <span className="text-gray-700">*********</span>
                 </div>
-                
               </div>
             </div>
           </div>
@@ -356,30 +339,6 @@ export default function Profile() {
                   onClick={() => {
                     setAddressEdit(address)
                     setShowAddressModal(true)
-                  }}
-                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Postal code */}
-            <div>
-              <label className="block text-sm text-gray-600 mb-2">
-                Postal code
-              </label>
-              <div className="bg-gray-50 rounded-lg p-4 flex items-center justify-between group hover:bg-gray-100 transition-colors">
-                <div className="flex items-center space-x-3">
-                  <MapPin className="w-5 h-5 text-gray-400" />
-                  <span className={postalCode ? 'text-gray-700' : 'text-gray-400'}>
-                    {postalCode || 'Postal code'}
-                  </span>
-                </div>
-                <button
-                  onClick={() => {
-                    setPostalCodeEdit(postalCode)
-                    setShowPostalCodeModal(true)
                   }}
                   className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                 >
@@ -430,20 +389,6 @@ export default function Profile() {
           type="text"
           placeholder="Enter address"
           label="Address"
-        />
-      )}
-
-      {showPostalCodeModal && (
-        <FieldModal
-          title="Edit Postal Code"
-          onClose={() => setShowPostalCodeModal(false)}
-          value={postalCodeEdit}
-          onChange={setPostalCodeEdit}
-          onSubmit={handleSavePostalCode}
-          isLoading={false}
-          type="text"
-          placeholder="Enter postal code"
-          label="Postal Code"
         />
       )}
     </div>

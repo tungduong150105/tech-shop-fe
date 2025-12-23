@@ -1,24 +1,43 @@
-import React, { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Edit3, Trash2, Plus, RefreshCw } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   useAdminFilterOptions,
   useDeleteAdminFilterOption,
   useSyncFilterOptions,
   useAdminCategories
 } from '../../hooks'
+import { useFilterKeys } from '../../hooks/useFilterKeys'
 import { toast } from 'sonner'
 import ConfirmModal from '../../../client/components/common/ConfirmModal'
 
 export default function AdminFiltersList() {
-  const { data, isLoading } = useAdminFilterOptions()
-  const { data: categoriesData } = useAdminCategories()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [limit] = useState(10)
+
+  // Get parameters from URL
+  const page = parseInt(searchParams.get('page') || '1', 10)
+  const query = searchParams.get('q') || ''
+  const filterKey = searchParams.get('key') || ''
+  const filterCategory = searchParams.get('category') || ''
+  const filterActive = searchParams.get('active') || ''
+
+  const { data, isLoading } = useAdminFilterOptions({
+    page,
+    limit,
+    q: query || undefined,
+    key: filterKey || undefined,
+    category_id: filterCategory
+      ? filterCategory === 'null'
+        ? undefined
+        : Number(filterCategory)
+      : undefined,
+    is_active: filterActive ? filterActive === 'true' : undefined
+  })
+  const { data: categoriesData } = useAdminCategories({ limit: 100 })
+  const { data: filterKeysData } = useFilterKeys({ limit: 100 })
   const del = useDeleteAdminFilterOption()
   const sync = useSyncFilterOptions()
-  const [query, setQuery] = useState('')
-  const [filterKey, setFilterKey] = useState<string>('')
-  const [filterCategory, setFilterCategory] = useState<string>('')
-  const [filterActive, setFilterActive] = useState<string>('')
   const [pendingDelete, setPendingDelete] = useState<number | null>(null)
 
   // Ensure filterOptions is always an array
@@ -26,42 +45,43 @@ export default function AdminFiltersList() {
   // FilterOptionListResponseWithSuccess = { success: boolean, data: FilterOption[] }
   // So we need: data.data.data to get the array
   const filterOptions = Array.isArray(data?.data?.data) ? data.data.data : []
-  const categories = Array.isArray(categoriesData?.data)
-    ? categoriesData.data
+  const categories = Array.isArray(categoriesData?.data?.categories)
+    ? categoriesData.data.categories
+    : []
+  const filterKeys = Array.isArray((filterKeysData as any)?.data)
+    ? (filterKeysData as any).data
     : []
 
-  const filtered = filterOptions.filter(opt => {
-    if (!opt) return false
-    const q = query.trim().toLowerCase()
-    if (q) {
-      const matchId = String(opt.id || '')
-        .toLowerCase()
-        .includes(q)
-      const matchKey = String(opt.key || '')
-        .toLowerCase()
-        .includes(q)
-      const matchLabel = String(opt.label || '')
-        .toLowerCase()
-        .includes(q)
-      const matchValue = String(opt.value || '')
-        .toLowerCase()
-        .includes(q)
-      if (!matchId && !matchKey && !matchLabel && !matchValue) return false
-    }
-    if (filterKey && opt.key !== filterKey) return false
-    if (filterCategory) {
-      if (filterCategory === 'null' && opt.category_id !== null) return false
-      if (filterCategory !== 'null' && opt.category_id !== filterCategory)
-        return false
-    }
-    if (filterActive) {
-      const isActive = filterActive === 'true'
-      if (opt.is_active !== isActive) return false
-    }
-    return true
-  })
+  const pages = useMemo(
+    () => Math.max(1, data?.data?.pagination?.total_pages || 1),
+    [data]
+  )
 
-  const uniqueKeys = Array.from(new Set(filterOptions.map(opt => opt.key)))
+  // Update URL when parameters change
+  const updateParams = (updates: Record<string, string | null>) => {
+    const params = new URLSearchParams(searchParams)
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value) {
+        params.set(key, value)
+      } else {
+        params.delete(key)
+      }
+    })
+    params.set('page', '1') // Reset to first page when filters change
+    setSearchParams(params)
+  }
+
+  const setPage = (newPage: number) => {
+    const params = new URLSearchParams(searchParams)
+    params.set('page', newPage.toString())
+    setSearchParams(params)
+  }
+
+  // Get all available filter keys from the database instead of just from current results
+  const availableKeys = filterKeys.map((fk: any) => ({
+    key: fk.key,
+    label: fk.label
+  }))
 
   const handleSync = async () => {
     try {
@@ -86,7 +106,7 @@ export default function AdminFiltersList() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Filter Options</h1>
         <div className="flex items-center gap-2">
-          {/* <button
+          <button
             onClick={handleSync}
             disabled={sync.isPending}
             className="px-3 py-2 bg-gray-600 text-white rounded text-sm flex items-center gap-2 disabled:opacity-50"
@@ -96,7 +116,7 @@ export default function AdminFiltersList() {
               className={sync.isPending ? 'animate-spin' : ''}
             />
             Sync from Products
-          </button> */}
+          </button>
           <Link
             to="/admin/filters/new"
             className="px-3 py-2 bg-blue-600 text-white rounded text-sm flex items-center gap-2"
@@ -127,24 +147,24 @@ export default function AdminFiltersList() {
             className="border rounded px-3 py-2 text-sm"
             placeholder="Search by ID, key, label, or value"
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={e => updateParams({ q: e.target.value || null })}
           />
           <select
             className="border rounded px-3 py-2 text-sm"
             value={filterKey}
-            onChange={e => setFilterKey(e.target.value)}
+            onChange={e => updateParams({ key: e.target.value || null })}
           >
             <option value="">All Keys</option>
-            {uniqueKeys.map(key => (
-              <option key={key} value={key}>
-                {key}
+            {availableKeys.map((keyObj: { key: string; label: string }) => (
+              <option key={keyObj.key} value={keyObj.key}>
+                {keyObj.label} ({keyObj.key})
               </option>
             ))}
           </select>
           <select
             className="border rounded px-3 py-2 text-sm"
             value={filterCategory}
-            onChange={e => setFilterCategory(e.target.value)}
+            onChange={e => updateParams({ category: e.target.value || null })}
           >
             <option value="">All Categories</option>
             <option value="null">Global (No Category)</option>
@@ -157,7 +177,7 @@ export default function AdminFiltersList() {
           <select
             className="border rounded px-3 py-2 text-sm"
             value={filterActive}
-            onChange={e => setFilterActive(e.target.value)}
+            onChange={e => updateParams({ active: e.target.value || null })}
           >
             <option value="">All Status</option>
             <option value="true">Active</option>
@@ -174,40 +194,76 @@ export default function AdminFiltersList() {
             ))}
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="text-left p-2">ID</th>
-                <th className="text-left p-2">Key</th>
-                <th className="text-left p-2">Label</th>
-                <th className="text-left p-2">Value</th>
-                <th className="text-left p-2">Category</th>
-                <th className="text-left p-2">Order</th>
-                <th className="text-left p-2">Status</th>
-                <th className="text-left p-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? (
+          <>
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
                 <tr>
-                  <td colSpan={8} className="p-6 text-center text-gray-500">
-                    No filter options found
-                  </td>
+                  <th className="text-left p-2">ID</th>
+                  <th className="text-left p-2">Key</th>
+                  <th className="text-left p-2">Label</th>
+                  <th className="text-left p-2">Value</th>
+                  <th className="text-left p-2">Display</th>
+                  <th className="text-left p-2">Query</th>
+                  <th className="text-left p-2">Category</th>
+                  <th className="text-left p-2">Order</th>
+                  <th className="text-left p-2">Status</th>
+                  <th className="text-left p-2">Actions</th>
                 </tr>
-              ) : (
-                filtered.map(opt => (
-                  <FilterRow
-                    key={opt.id}
-                    option={opt}
-                    onEdit={() => {
-                      window.location.href = `/admin/filters/${opt.id}`
-                    }}
-                    onDelete={() => setPendingDelete(Number(opt.id))}
-                  />
-                ))
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filterOptions.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="p-6 text-center text-gray-500">
+                      No filter options found
+                    </td>
+                  </tr>
+                ) : (
+                  filterOptions.map(opt => (
+                    <FilterRow
+                      key={opt.id}
+                      option={opt}
+                      onEdit={() => {
+                        window.location.href = `/admin/filters/${opt.id}`
+                      }}
+                      onDelete={() => setPendingDelete(Number(opt.id))}
+                    />
+                  ))
+                )}
+              </tbody>
+            </table>
+
+            <div className="flex items-center justify-between p-3 border-t text-sm">
+              <button
+                className="px-3 py-1.5 border rounded"
+                disabled={page <= 1}
+                onClick={() => setPage(Math.max(1, page - 1))}
+              >
+                Previous
+              </button>
+              <div className="space-x-1">
+                {Array.from({ length: pages }, (_, i) => i + 1).map(n => (
+                  <button
+                    key={n}
+                    className={`px-3 py-1.5 rounded border ${
+                      n === (data?.data?.pagination?.current_page || 1)
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : ''
+                    }`}
+                    onClick={() => setPage(n)}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+              <button
+                className="px-3 py-1.5 border rounded"
+                disabled={page >= pages}
+                onClick={() => setPage(Math.min(pages, page + 1))}
+              >
+                Next
+              </button>
+            </div>
+          </>
         )}
       </div>
     </div>
@@ -228,11 +284,27 @@ function FilterRow({
       <td className="p-2">{option.id}</td>
       <td className="p-2">
         <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
-          {option.key}
+          {option.filter_key?.key || option.key}
         </span>
       </td>
-      <td className="p-2">{option.label}</td>
+      <td className="p-2">{option.filter_key?.label || option.label}</td>
       <td className="p-2 font-medium">{option.value}</td>
+      <td className="p-2">
+        {option.display_value ? (
+          <span className="text-sm text-green-700">{option.display_value}</span>
+        ) : (
+          <span className="text-gray-400 text-sm">-</span>
+        )}
+      </td>
+      <td className="p-2">
+        {option.query_value ? (
+          <span className="text-sm text-blue-700 font-mono">
+            {option.query_value}
+          </span>
+        ) : (
+          <span className="text-gray-400 text-sm">-</span>
+        )}
+      </td>
       <td className="p-2">
         {option.category ? (
           <span className="text-sm">{option.category.name}</span>

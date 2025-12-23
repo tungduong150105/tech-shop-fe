@@ -14,8 +14,14 @@ const filterKeys = {
     [...filterKeys.all, category_id] as const,
   admin: {
     all: ['admin', 'filterOptions'] as const,
-    list: (params?: { category_id?: number; key?: string; is_active?: boolean }) =>
-      [...filterKeys.admin.all, 'list', params] as const,
+    list: (params?: {
+      category_id?: number
+      key?: string
+      is_active?: boolean
+      page?: number
+      limit?: number
+      q?: string
+    }) => [...filterKeys.admin.all, 'list', params] as const,
     detail: (id: number) => [...filterKeys.admin.all, id] as const
   }
 }
@@ -29,7 +35,14 @@ export function useAdminFilters(category_id?: number) {
 }
 
 // Admin CRUD hooks
-export function useAdminFilterOptions(params?: { category_id?: number; key?: string; is_active?: boolean }) {
+export function useAdminFilterOptions(params?: {
+  category_id?: number
+  key?: string
+  is_active?: boolean
+  page?: number
+  limit?: number
+  q?: string
+}) {
   return useQuery<{ data: FilterOptionListResponseWithSuccess }, Error>({
     queryKey: filterKeys.admin.list(params),
     queryFn: () => adminFilterService.list(params)
@@ -80,7 +93,11 @@ export function useDeleteAdminFilterOption() {
 
 export function useSyncFilterOptions() {
   const qc = useQueryClient()
-  return useMutation<{ success: boolean; message: string; data: any }, Error, number | undefined>({
+  return useMutation<
+    { success: boolean; message: string; data: any },
+    Error,
+    number | undefined
+  >({
     mutationFn: category_id => adminFilterService.sync(category_id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: filterKeys.admin.all })

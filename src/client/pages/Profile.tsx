@@ -85,7 +85,6 @@ function Profile() {
     try {
       await logoutMutation.mutateAsync()
       toast.success('Logged out successfully')
-      // Redirect to home
       navigate('/')
     } catch (error: any) {
       toast.error(error?.message || 'Failed to logout')
@@ -126,7 +125,6 @@ function Profile() {
     try {
       await uploadAvatarMutation.mutateAsync(file)
       toast.success('Avatar uploaded successfully')
-      // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }

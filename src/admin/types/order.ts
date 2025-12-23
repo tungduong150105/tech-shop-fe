@@ -79,10 +79,10 @@ export type OrderStatsResponse = {
 }
 
 export type OrderPagination = {
-  page: number
-  limit: number
-  total: number
-  pages: number
+  current_page: number
+  per_page: number
+  total_count: number
+  total_pages: number
 }
 
 export type OrderListResponse = {

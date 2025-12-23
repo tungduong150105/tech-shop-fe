@@ -12,7 +12,7 @@ type ModalProps = {
   onClose: () => void
   onChange: (value: string) => void
   onSubmit: () => void
-  onSelectProduct: (productId: number) => void
+  onSelectProduct: (productId: number, productName: string) => void
 }
 
 const useDebouncedValue = (value: string, delay = 350) => {
@@ -35,11 +35,10 @@ function Modal({
   onSelectProduct
 }: ModalProps) {
   const debouncedTerm = useDebouncedValue(searchTerm)
-  const {
-    data,
-    isFetching,
-    isError
-  } = useSearchProducts(debouncedTerm, { limit: 6, sort: 'popular' })
+  const { data, isFetching, isError } = useSearchProducts(debouncedTerm, {
+    limit: 6,
+    sort: 'popular'
+  })
 
   const results = data?.products || []
 
@@ -64,7 +63,9 @@ function Modal({
     >
       <div
         className={`bg-white rounded-2xl shadow-2xl w-[90%] max-w-3xl transition-all ${
-          open ? 'scale-100 opacity-100 translate-y-0' : 'scale-105 opacity-0 -translate-y-4'
+          open
+            ? 'scale-100 opacity-100 translate-y-0'
+            : 'scale-105 opacity-0 -translate-y-4'
         }`}
         onClick={e => e.stopPropagation()}
       >
@@ -76,7 +77,7 @@ function Modal({
             <input
               autoFocus
               type="text"
-              placeholder="Tìm sản phẩm, danh mục hoặc từ khóa..."
+              placeholder="Search products, categories or keywords..."
               className="flex-1 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={searchTerm}
               onChange={e => onChange(e.target.value)}
@@ -92,13 +93,13 @@ function Modal({
               className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition"
               disabled={!searchTerm.trim()}
             >
-              Tìm kiếm
+              Search
             </button>
             <button
               onClick={onClose}
               className="px-3 py-2 rounded-lg border border-gray-200 text-gray-600 text-sm hover:bg-gray-50"
             >
-              Đóng
+              Close
             </button>
           </div>
         </div>
@@ -106,7 +107,7 @@ function Modal({
         <div className="p-6">
           {!searchTerm.trim() && (
             <p className="text-sm text-gray-500">
-              Nhập từ khóa để bắt đầu tìm kiếm sản phẩm.
+              Enter keywords to start searching for products.
             </p>
           )}
 
@@ -125,13 +126,13 @@ function Modal({
 
               {isError && (
                 <p className="text-sm text-red-500">
-                  Không thể tìm sản phẩm. Vui lòng thử lại.
+                  Unable to search products. Please try again.
                 </p>
               )}
 
               {!isFetching && !isError && formattedResults.length === 0 && (
                 <p className="text-sm text-gray-500">
-                  Không tìm thấy sản phẩm phù hợp.
+                  No matching products found.
                 </p>
               )}
 
@@ -140,7 +141,7 @@ function Modal({
                   {formattedResults.map(item => (
                     <button
                       key={item.id}
-                      onClick={() => onSelectProduct(item.id)}
+                      onClick={() => onSelectProduct(item.id, item.name)}
                       className="flex items-center gap-4 p-3 border border-gray-100 rounded-xl hover:border-blue-200 hover:shadow-sm transition text-left"
                     >
                       <img
@@ -156,7 +157,7 @@ function Modal({
                           {item.name}
                         </p>
                         <p className="text-sm text-blue-600 font-semibold mt-1">
-                          {item.price?.toLocaleString('vi-VN')} ₫
+                          ${item.price?.toLocaleString('en-US')}
                         </p>
                       </div>
                     </button>
@@ -182,9 +183,8 @@ const Search = () => {
     navigate(`/collection/all?search=${encodeURIComponent(searchTerm.trim())}`)
   }
 
-  const handleSelectProduct = (productId: number) => {
-    const found = formattedResults.find(p => p.id === productId)
-    const slug = found ? found.slug : productId
+  const handleSelectProduct = (productId: number, productName: string) => {
+    const slug = makeProductSlug(productName, productId)
     setIsOpen(false)
     navigate(`/product/${slug}`)
   }
@@ -207,7 +207,7 @@ const Search = () => {
           setSearchTerm('')
         }}
         className="hover:opacity-80 transition"
-        aria-label="Mở tìm kiếm"
+        aria-label="Open search"
       >
         <img src={SearchIcon} alt="Search" className="h-6 w-6" />
       </button>

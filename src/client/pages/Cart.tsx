@@ -17,13 +17,17 @@ import {
 } from '../hooks/useCart'
 import { toast } from 'sonner'
 import ConfirmModal from '../components/common/ConfirmModal'
-
+import { makeProductSlug } from '../utils/productSlug'
 const Cart = () => {
   const navigate = useNavigate()
   const { data: cartData, isLoading } = useCart()
   const updateQuantityMutation = useUpdateCartQuantity()
   const removeItemMutation = useRemoveCartItem()
-  const [pendingRemove, setPendingRemove] = useState<{ id: number; cartItemId: number; name: string } | null>(null)
+  const [pendingRemove, setPendingRemove] = useState<{
+    id: number
+    cartItemId: number
+    name: string
+  } | null>(null)
 
   const cart = cartData?.cart
   const items = cart?.items || []
@@ -51,7 +55,11 @@ const Cart = () => {
     )
   }
 
-  const handleDec = (productId: number, cartItemId: number, currentQuantity: number) => {
+  const handleDec = (
+    productId: number,
+    cartItemId: number,
+    currentQuantity: number
+  ) => {
     if (currentQuantity > 1) {
       updateQuantityMutation.mutate(
         { productId, cartItemId, quantity: currentQuantity - 1 },
@@ -67,7 +75,11 @@ const Cart = () => {
     }
   }
 
-  const handleRemove = (productId: number, cartItemId: number, productName: string) => {
+  const handleRemove = (
+    productId: number,
+    cartItemId: number,
+    productName: string
+  ) => {
     setPendingRemove({ id: productId, name: productName, cartItemId })
   }
 
@@ -76,22 +88,21 @@ const Cart = () => {
     removeItemMutation.mutate(
       { productId: pendingRemove.id, cartItemId: pendingRemove.cartItemId },
       {
-      onSuccess: () => {
-        toast.success('Item removed from cart')
-        setPendingRemove(null)
-      },
-      onError: () => {
-        toast.error('Failed to remove item')
-        setPendingRemove(null)
+        onSuccess: () => {
+          toast.success('Item removed from cart')
+          setPendingRemove(null)
+        },
+        onError: () => {
+          toast.error('Failed to remove item')
+          setPendingRemove(null)
         }
       }
     )
   }
 
-  const shipmentCost = 22.5 // Fixed shipment cost for now
   const subtotal = cart?.total_original_price || 0
   const discount = cart?.total_discount || 0
-  const grandTotal = (cart?.total_price || 0) + shipmentCost
+  const grandTotal = cart?.total_price || 0
 
   const skeletonItems = useMemo(() => Array.from({ length: 3 }), [])
 
@@ -100,7 +111,9 @@ const Cart = () => {
       <ConfirmModal
         open={!!pendingRemove}
         title="Remove item?"
-        description={pendingRemove ? `Remove "${pendingRemove.name}" from your cart?` : ''}
+        description={
+          pendingRemove ? `Remove "${pendingRemove.name}" from your cart?` : ''
+        }
         confirmText="Remove"
         cancelText="Keep"
         tone="danger"
@@ -152,13 +165,16 @@ const Cart = () => {
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-6 py-8">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Section - Cart Items */}
           <div className="lg:col-span-2 space-y-4">
             {isLoading && (
               <div className="space-y-4">
                 {skeletonItems.map((_, idx) => (
-                  <div key={idx} className="bg-white rounded-lg shadow p-6 animate-pulse">
+                  <div
+                    key={idx}
+                    className="bg-white rounded-lg shadow p-6 animate-pulse"
+                  >
                     <div className="flex gap-6">
                       <div className="w-32 h-32 bg-gray-200 rounded-lg" />
                       <div className="flex-1 space-y-3">
@@ -185,9 +201,14 @@ const Cart = () => {
                 const imageUrl = item.image_url || ''
                 const colorName = item.color?.name || ''
                 const colorCode = item.color?.code || '#000000'
-
+                const productId = item.product_id
+                const productSlug = makeProductSlug(item.name, productId)
                 return (
-                  <div key={item.id} className="bg-white rounded-lg shadow p-6">
+                  <div
+                    key={item.id}
+                    className="bg-white rounded-lg shadow p-6"
+                    onClick={() => navigate(`/product/${productSlug}`)}
+                  >
                     <div className="flex gap-6">
                       {/* Product Image */}
                       <div className="flex-shrink-0">
@@ -277,7 +298,11 @@ const Cart = () => {
                           <div className="flex items-center gap-3 border border-gray-300 rounded-lg">
                             <button
                               onClick={() =>
-                                handleDec(item.product_id, item.id, item.quantity)
+                                handleDec(
+                                  item.product_id,
+                                  item.id,
+                                  item.quantity
+                                )
                               }
                               disabled={item.quantity <= 1}
                               className="p-2 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -339,11 +364,6 @@ const Cart = () => {
                       <span>-${discount.toFixed(2)}</span>
                     </div>
                   )}
-
-                  <div className="flex justify-between text-gray-600">
-                    <span>Shipment cost</span>
-                    <span>${shipmentCost.toFixed(2)}</span>
-                  </div>
                 </div>
 
                 <div className="border-t pt-4 mb-6">

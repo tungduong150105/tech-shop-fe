@@ -1,5 +1,3 @@
-import { Pagination } from './common'
-
 export type AdminCustomer = {
   id: number
   name?: string
@@ -12,7 +10,12 @@ export type AdminCustomer = {
 
 export type CustomerListResponse = {
   users: AdminCustomer[]
-  pagination: Pagination & { total_pages?: number }
+  pagination: {
+    current_page: number
+    per_page: number
+    total_count: number
+    total_pages: number
+  }
 }
 
 export type CustomerResponse = AdminCustomer
@@ -23,5 +26,3 @@ export type UpdateCustomerRequest = Partial<{
   phone: string
   address: string
 }>
-
-

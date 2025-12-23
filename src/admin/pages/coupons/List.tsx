@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useState, useMemo } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Edit3, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -15,12 +15,47 @@ import ConfirmModal from '../../../client/components/common/ConfirmModal'
 
 export default function AdminCouponsList() {
   const navigate = useNavigate()
-  const { data, isLoading } = useAdminCoupons()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [limit] = useState(10)
+
+  // Get parameters from URL
+  const page = parseInt(searchParams.get('page') || '1', 10)
+  const query = searchParams.get('q') || ''
+
+  const { data, isLoading } = useAdminCoupons({
+    page,
+    limit,
+    q: query || undefined
+  })
   const del = useDeleteAdminCoupon()
   const createMut = useCreateAdminCoupon()
   const [createOpen, setCreateOpen] = useState(false)
   const [editOpen, setEditOpen] = useState<null | number>(null)
   const updateMut = useUpdateAdminCoupon(editOpen || 0)
+
+  const pages = useMemo(
+    () => Math.max(1, data?.data.pagination.total_pages || 1),
+    [data]
+  )
+
+  // Update URL when page changes
+  const setPage = (newPage: number) => {
+    const params = new URLSearchParams(searchParams)
+    params.set('page', newPage.toString())
+    setSearchParams(params)
+  }
+
+  // Update URL when query changes
+  const setQuery = (newQuery: string) => {
+    const params = new URLSearchParams(searchParams)
+    if (newQuery) {
+      params.set('q', newQuery)
+    } else {
+      params.delete('q')
+    }
+    params.set('page', '1') // Reset to first page when searching
+    setSearchParams(params)
+  }
 
   const onDelete = (id: number) => setConfirmId(id)
   const [confirmId, setConfirmId] = useState<number | null>(null)
@@ -29,13 +64,21 @@ export default function AdminCouponsList() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Coupons</h1>
-        <button
-          className="px-3 py-2 bg-green-600 text-white rounded disabled:opacity-60"
-          onClick={() => navigate('/admin/coupons/new')}
-          disabled={createMut.isPending}
-        >
-          New Coupon
-        </button>
+        <div className="flex items-center gap-2">
+          <input
+            className="border rounded px-3 py-2 text-sm w-56"
+            placeholder="Search by code"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+          />
+          <button
+            className="px-3 py-2 bg-green-600 text-white rounded disabled:opacity-60"
+            onClick={() => navigate('/admin/coupons/new')}
+            disabled={createMut.isPending}
+          >
+            New Coupon
+          </button>
+        </div>
       </div>
 
       <ConfirmModal
@@ -60,49 +103,91 @@ export default function AdminCouponsList() {
         {isLoading ? (
           <SkeletonTable rows={5} cols={7} />
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-green-50">
-              <tr>
-                <th className="text-left p-2">Code</th>
-                <th className="text-left p-2">Type</th>
-                <th className="text-left p-2">Value</th>
-                <th className="text-left p-2">Min Order</th>
-                <th className="text-left p-2">Usage</th>
-                <th className="text-left p-2">Expires</th>
-                <th className="text-left p-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data?.data?.map(c => (
-                <tr key={c.id} className="border-t">
-                  <td className="p-2 font-medium">{c.code}</td>
-                  <td className="p-2">{c.discount_type}</td>
-                  <td className="p-2">{Number(c.discount_value)}</td>
-                  <td className="p-2">
-                    {c.min_order ? Number(c.min_order) : '-'}
-                  </td>
-                  <td className="p-2">
-                    {c.used_count ?? 0}/{c.usage_limit ?? '∞'}
-                  </td>
-                  <td className="p-2">
-                    {c.expires_at
-                      ? new Date(c.expires_at).toLocaleDateString()
-                      : '—'}
-                  </td>
-                  <td className="p-2">
-                    <div className="flex items-center gap-2">
-                      <button title="Edit" className="text-blue-600" onClick={() => setEditOpen(c.id)}>
-                        <Edit3 size={16} />
-                      </button>
-                      <button title="Delete" className="text-red-600" onClick={() => onDelete(c.id)}>
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
+          <>
+            <table className="w-full text-sm">
+              <thead className="bg-green-50">
+                <tr>
+                  <th className="text-left p-2">Code</th>
+                  <th className="text-left p-2">Type</th>
+                  <th className="text-left p-2">Value</th>
+                  <th className="text-left p-2">Min Order</th>
+                  <th className="text-left p-2">Usage</th>
+                  <th className="text-left p-2">Expires</th>
+                  <th className="text-left p-2">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {data?.data.coupons?.map(c => (
+                  <tr key={c.id} className="border-t">
+                    <td className="p-2 font-medium">{c.code}</td>
+                    <td className="p-2">{c.discount_type}</td>
+                    <td className="p-2">{Number(c.discount_value)}</td>
+                    <td className="p-2">
+                      {c.min_order ? Number(c.min_order) : '-'}
+                    </td>
+                    <td className="p-2">
+                      {c.used_count ?? 0}/{c.usage_limit ?? '∞'}
+                    </td>
+                    <td className="p-2">
+                      {c.expires_at
+                        ? new Date(c.expires_at).toLocaleDateString()
+                        : '—'}
+                    </td>
+                    <td className="p-2">
+                      <div className="flex items-center gap-2">
+                        <button
+                          title="Edit"
+                          className="text-blue-600"
+                          onClick={() => setEditOpen(c.id)}
+                        >
+                          <Edit3 size={16} />
+                        </button>
+                        <button
+                          title="Delete"
+                          className="text-red-600"
+                          onClick={() => onDelete(c.id)}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div className="flex items-center justify-between p-3 border-t text-sm">
+              <button
+                className="px-3 py-1.5 border rounded"
+                disabled={page <= 1}
+                onClick={() => setPage(Math.max(1, page - 1))}
+              >
+                Previous
+              </button>
+              <div className="space-x-1">
+                {Array.from({ length: pages }, (_, i) => i + 1).map(n => (
+                  <button
+                    key={n}
+                    className={`px-3 py-1.5 rounded border ${
+                      n === (data?.data.pagination.current_page || 1)
+                        ? 'bg-green-600 text-white border-green-600'
+                        : ''
+                    }`}
+                    onClick={() => setPage(n)}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+              <button
+                className="px-3 py-1.5 border rounded"
+                disabled={page >= pages}
+                onClick={() => setPage(Math.min(pages, page + 1))}
+              >
+                Next
+              </button>
+            </div>
+          </>
         )}
       </div>
 

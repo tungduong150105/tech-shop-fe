@@ -52,6 +52,12 @@ const sections: NavSection[] = [
         end: true
       },
       {
+        to: '/admin/filter-keys',
+        label: 'Filter Keys',
+        icon: Filter,
+        end: true
+      },
+      {
         to: '/admin/chat',
         label: 'Customer Chat',
         icon: MessageCircle,
@@ -81,7 +87,6 @@ export default function AdminLayout() {
   const { data: chatsData } = useAllChats(1, 50)
   const [socket, setSocket] = useState<Socket | null>(null)
 
-  // Setup socket for notifications
   useEffect(() => {
     if (!userData?.user || userData.user.role !== 'admin') return
 
@@ -100,10 +105,7 @@ export default function AdminLayout() {
       console.log('Admin socket connected for notifications')
     })
 
-    newSocket.on('chat_notification', data => {
-      // This will trigger refetch in chat page
-      // Badge count will update automatically via useAllChats
-    })
+    newSocket.on('chat_notification', data => {})
 
     setSocket(newSocket)
 
@@ -112,7 +114,6 @@ export default function AdminLayout() {
     }
   }, [userData])
 
-  // Calculate total unread count
   const totalUnreadCount =
     chatsData?.data?.chats?.reduce(
       (sum, chat) => sum + (chat.unreadCount || 0),
@@ -146,12 +147,6 @@ export default function AdminLayout() {
           </Link>
           {userData?.user && (
             <div className="flex items-center gap-3 pl-3 border-l">
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">
-                  {userData.user.name}
-                </p>
-                <p className="text-xs text-gray-500">{userData.user.email}</p>
-              </div>
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition"

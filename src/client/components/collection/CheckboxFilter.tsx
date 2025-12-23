@@ -8,24 +8,33 @@ type CheckboxFilterProps = {
   onChange: (value: string) => void
 }
 
-const CheckboxFilter = ({ label, options, selectedValues, onChange }: CheckboxFilterProps) => {
-  const [expanded, setExpanded] = useState(true);
+const CheckboxFilter = ({
+  label,
+  options,
+  selectedValues,
+  onChange
+}: CheckboxFilterProps) => {
+  const [expanded, setExpanded] = useState(true)
 
   return (
-    <div className="mb-6">
-      <button 
+    <div>
+      <button
         onClick={() => setExpanded(!expanded)}
         className="flex items-center justify-between w-full mb-3"
       >
         <span className="font-medium">{label}</span>
-        {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        {expanded ? (
+          <ChevronUp className="w-4 h-4" />
+        ) : (
+          <ChevronDown className="w-4 h-4" />
+        )}
       </button>
       {expanded && (
         <div className="space-y-2">
           {options.map((option, idx) => (
             <label key={idx} className="flex items-center gap-2 cursor-pointer">
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 checked={selectedValues.includes(option)}
                 onChange={() => onChange(option)}
                 className="w-4 h-4 rounded border-gray-300"
@@ -36,7 +45,7 @@ const CheckboxFilter = ({ label, options, selectedValues, onChange }: CheckboxFi
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
 export default CheckboxFilter

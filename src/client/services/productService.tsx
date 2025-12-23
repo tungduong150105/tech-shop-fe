@@ -41,6 +41,20 @@ export const fetchProductById = async (id: number): Promise<Product> => {
 }
 
 export const fetchSimilarProducts = async (
+  productId: number,
+  limit: number = 6
+): Promise<ListProductRes> => {
+  const { data } = await axiosClient.get<ListProductRes>(
+    `/products/${productId}/similar`,
+    {
+      params: { limit }
+    }
+  )
+  return data
+}
+
+// Legacy function for category-based similar products (keeping for backward compatibility)
+export const fetchSimilarProductsByCategory = async (
   categoryId: number
 ): Promise<ListProductRes> => {
   const { data } = await axiosClient.get<ListProductRes>('/products', {

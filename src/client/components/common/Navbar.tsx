@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { Settings } from 'lucide-react'
 
 import Login from './Login'
 import Search from './Search'
@@ -86,9 +87,20 @@ const Navbar = () => {
             <CartDrawer cartProducts={cartProducts?.cart || null} />
           )}
           {userLoggedIn ? (
-            <Link to="/profile">
-              <img src={ProfileIcon} alt="Profile" className="h-15 w-15" />
-            </Link>
+            <div className="flex items-center space-x-3">
+              {user?.user?.role === 'admin' && (
+                <Link
+                  to="/admin"
+                  className="p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
+                  title="Admin Panel"
+                >
+                  <Settings className="w-5 h-5" />
+                </Link>
+              )}
+              <Link to="/profile">
+                <img src={ProfileIcon} alt="Profile" className="h-15 w-15" />
+              </Link>
+            </div>
           ) : (
             <button
               className="rounded-lg bg-blue-600 px-4 py-3 text-white text-light hover:bg-white hover:text-blue-600 hover:ring"
@@ -103,17 +115,23 @@ const Navbar = () => {
         open={openAuth}
         onClose={() => setOpenAuth(false)}
         onSuccess={handleAuthSuccess}
-        onForgotPassword={() => setInfoModal('Tính năng quên mật khẩu sẽ có sớm.')}
-        onLoginWithGoogle={() => setInfoModal('Google OAuth đang được chuẩn bị.')}
-        onLoginWithFacebook={() => setInfoModal('Facebook OAuth đang được chuẩn bị.')}
+        onForgotPassword={() =>
+          setInfoModal('Forgot password feature will be available soon.')
+        }
+        onLoginWithGoogle={() =>
+          setInfoModal('Google OAuth is being prepared.')
+        }
+        onLoginWithFacebook={() =>
+          setInfoModal('Facebook OAuth is being prepared.')
+        }
         brand="Tech Heim"
       />
       <ConfirmModal
         open={!!infoModal}
-        title="Thông báo"
+        title="Notification"
         description={infoModal || ''}
-        confirmText="Đóng"
-        cancelText="Huỷ"
+        confirmText="Close"
+        cancelText="Cancel"
         onConfirm={() => setInfoModal(null)}
         onClose={() => setInfoModal(null)}
       />

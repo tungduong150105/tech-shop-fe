@@ -14,6 +14,8 @@ import {
 import { useNavigate } from 'react-router-dom'
 import { useCart, useClearCart } from '../hooks/useCart'
 import { useValidateToken } from '../hooks/useAuth'
+import { usePublicSettings } from '../hooks/useSettings'
+
 import { createOrder } from '../services/orderService'
 import { toast } from 'sonner'
 import {
@@ -26,6 +28,8 @@ const Checkout = () => {
   const navigate = useNavigate()
   const { data: cartData, isLoading } = useCart()
   const { data: userData } = useValidateToken()
+  const { data: settingsData } = usePublicSettings('shipping')
+
   const cart = cartData?.cart
   const items = cart?.items || []
   const [address, setAddress] = useState('')
@@ -47,10 +51,31 @@ const Checkout = () => {
   const totals = useMemo(() => {
     const subtotal = cart?.total_original_price || 0
     const discount = cart?.total_discount || 0
-    const shipmentCost = 22000
-    const grandTotal = (cart?.total_price || 0) + shipmentCost
-    return { subtotal, discount, shipmentCost, grandTotal }
-  }, [cart])
+    const shippingCostValue = settingsData?.settings?.shipping_fee
+
+    const freeShippingThreshold =
+      settingsData?.settings?.free_shipping_threshold
+    console.log('hello')
+    console.log(shippingCostValue)
+    const baseShippingCost = shippingCostValue ? Number(shippingCostValue) : 1
+    const threshold = freeShippingThreshold
+      ? Number(freeShippingThreshold)
+      : 500000
+
+    const orderTotal = cart?.total_price || 0
+    const shipmentCost = orderTotal >= threshold ? 0 : baseShippingCost
+    const isFreeShipping = orderTotal >= threshold
+
+    const grandTotal = orderTotal + shipmentCost
+    return {
+      subtotal,
+      discount,
+      shipmentCost,
+      grandTotal,
+      isFreeShipping,
+      freeShippingThreshold: threshold
+    }
+  }, [cart, settingsData])
 
   // Autofill receiver info from logged-in user
   useEffect(() => {
@@ -391,7 +416,7 @@ const Checkout = () => {
               </div>
             ))}
           </div>
-          <div className="mt-4 mb-2 bg-gray-50 p-3 rounded-lg space-y-2">
+          <div className="border-t mt-4 pt-4 space-y-2 text-sm text-gray-600">
             <div className="flex items-center gap-2">
               <input
                 value={couponInput}
@@ -445,8 +470,31 @@ const Checkout = () => {
             )}
             <div className="flex justify-between">
               <span>Shipment</span>
-              <span>{totals.shipmentCost.toLocaleString('vi-VN')} ₫</span>
+              <span
+                className={
+                  totals.isFreeShipping ? 'text-green-600 font-medium' : ''
+                }
+              >
+                {totals.isFreeShipping
+                  ? 'Free!'
+                  : `${totals.shipmentCost.toLocaleString('vi-VN')} ₫`}
+              </span>
             </div>
+            {totals.isFreeShipping && (
+              <div className="text-xs text-green-600 flex items-center gap-1">
+                <CheckCircle className="w-3 h-3" />
+                You qualified for free shipping!
+              </div>
+            )}
+            {!totals.isFreeShipping && (
+              <div className="text-xs text-gray-500">
+                Add{' '}
+                {(
+                  totals.freeShippingThreshold - (cart?.total_price || 0)
+                ).toLocaleString('vi-VN')}{' '}
+                ₫ more for free shipping
+              </div>
+            )}
             <div className="flex justify-between font-semibold text-gray-900 pt-2 border-t">
               <span>Total</span>
               <span>{displayTotal.toLocaleString('vi-VN')} ₫</span>

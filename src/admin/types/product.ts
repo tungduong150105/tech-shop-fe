@@ -75,7 +75,12 @@ export type ProductListQuery = {
 
 export type ProductListResponse = {
   products: AdminProduct[]
-  pagination: Pagination
+  pagination: {
+    current_page: number
+    per_page: number
+    total_count: number
+    total_pages: number
+  }
 }
 
 export type ProductResponse = AdminProduct

@@ -140,7 +140,7 @@ function ChatWidgetInner({ userId }: { userId: string | number }) {
             setIsOpen(true)
             setIsMinimized(false)
           }}
-          className="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-all flex items-center justify-center z-50"
+          className="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-all flex items-center justify-center z-[9999]"
           aria-label="Open chat"
         >
           <MessageCircle className="w-6 h-6" />
@@ -162,7 +162,7 @@ function ChatWidgetInner({ userId }: { userId: string | number }) {
       {isOpen && (
         <div
           ref={chatContainerRef}
-          className={`fixed bottom-6 right-6 w-96 bg-white rounded-lg shadow-2xl border border-gray-200 z-50 flex flex-col ${
+          className={`fixed bottom-6 right-6 w-96 bg-white rounded-lg shadow-2xl border border-gray-200 z-[9999] flex flex-col ${
             isMinimized ? 'h-16' : 'h-[600px]'
           } transition-all`}
         >

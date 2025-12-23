@@ -148,7 +148,9 @@ const Login = ({
   onSuccess
 }: AuthModalProps) => {
   const [tab, setTab] = useState<'login' | 'register'>('login')
-  const [mode, setMode] = useState<'login' | 'register' | 'verify' | 'reset'>('login')
+  const [mode, setMode] = useState<'login' | 'register' | 'verify' | 'reset'>(
+    'login'
+  )
   const [fullName, setFullName] = useState<string>('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -210,7 +212,7 @@ const Login = ({
         loginMutation.error?.message ||
         'Login failed. Please check your credentials.'
       if (msg.toLowerCase().includes('not verified')) {
-        toast.error('Email chưa xác minh. Nhập mã để kích hoạt.')
+        toast.error('Email not verified. Enter code to activate.')
         setVerifyEmail(email)
         setMode('verify')
       } else {
@@ -223,7 +225,9 @@ const Login = ({
   // Handle register success
   useEffect(() => {
     if (registerMutation.isSuccess) {
-      toast.success('Đăng ký thành công. Kiểm tra email để lấy mã xác minh.')
+      toast.success(
+        'Registration successful. Check email for verification code.'
+      )
       setVerifyEmail(email)
       setMode('verify')
       setTab('login')
@@ -277,35 +281,35 @@ const Login = ({
       }
     } else if (mode === 'verify') {
       if (!verifyEmail || !verifyCode) {
-        toast.error('Nhập email và mã xác minh')
+        toast.error('Enter email and verification code')
         return
       }
       verifyMutation.mutate(
         { email: verifyEmail, code: verifyCode },
         {
           onSuccess: () => {
-            toast.success('Xác minh thành công, hãy đăng nhập')
+            toast.success('Verification successful, please log in')
             setMode('login')
           },
           onError: (err: any) => {
-            toast.error(err?.response?.data?.error || 'Xác minh thất bại')
+            toast.error(err?.response?.data?.error || 'Verification failed')
           }
         }
       )
     } else if (mode === 'reset') {
       if (!resetEmail) {
-        toast.error('Nhập email để nhận mã')
+        toast.error('Enter email to receive code')
         return
       }
       if (!resetCode || !newPassword) {
-        toast.error('Nhập mã và mật khẩu mới')
+        toast.error('Enter code and new password')
         return
       }
       resetMutation.mutate(
         { email: resetEmail, code: resetCode, new_password: newPassword },
         {
           onSuccess: () => {
-            toast.success('Đổi mật khẩu thành công, hãy đăng nhập')
+            toast.success('Password changed successfully, please log in')
             setMode('login')
             setEmail(resetEmail)
             setPassword('')
@@ -313,7 +317,7 @@ const Login = ({
             setNewPassword('')
           },
           onError: (err: any) => {
-            toast.error(err?.response?.data?.error || 'Đổi mật khẩu thất bại')
+            toast.error(err?.response?.data?.error || 'Password change failed')
           }
         }
       )
@@ -367,10 +371,10 @@ const Login = ({
               {mode === 'login'
                 ? `Log in to ${brand}`
                 : mode === 'register'
-                  ? `Create your ${brand} account`
-                  : mode === 'verify'
-                    ? 'Xác minh email'
-                    : 'Quên mật khẩu'}
+                ? `Create your ${brand} account`
+                : mode === 'verify'
+                ? 'Verify Email'
+                : 'Forgot Password'}
             </h2>
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -401,7 +405,9 @@ const Login = ({
                     required
                     value={mode === 'reset' ? resetEmail : email}
                     onChange={e =>
-                      mode === 'reset' ? setResetEmail(e.target.value) : setEmail(e.target.value)
+                      mode === 'reset'
+                        ? setResetEmail(e.target.value)
+                        : setEmail(e.target.value)
                     }
                     placeholder="E-mail"
                     className="w-full rounded-lg border border-gray-300 pl-10 pr-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -428,7 +434,9 @@ const Login = ({
                     type="button"
                     onClick={() => setShowPassword(s => !s)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-label={
+                      showPassword ? 'Hide password' : 'Show password'
+                    }
                   >
                     {showPassword ? (
                       <EyeOffIcon className="w-5 h-5" />
@@ -469,7 +477,7 @@ const Login = ({
                       required
                       value={verifyEmail}
                       onChange={e => setVerifyEmail(e.target.value)}
-                      placeholder="Email cần xác minh"
+                      placeholder="Email to verify"
                       className="w-full rounded-lg border border-gray-300 pl-10 pr-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </label>
@@ -479,7 +487,7 @@ const Login = ({
                       required
                       value={verifyCode}
                       onChange={e => setVerifyCode(e.target.value)}
-                      placeholder="Nhập mã 6 số"
+                      placeholder="Enter 6-digit code"
                       className="w-full rounded-lg border border-gray-300 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </label>
@@ -488,21 +496,25 @@ const Login = ({
                       type="button"
                       onClick={() => {
                         if (!verifyEmail) {
-                          toast.error('Nhập email để gửi lại mã')
+                          toast.error('Enter email to resend code')
                           return
                         }
                         resendVerifyMutation.mutate(verifyEmail, {
-                          onSuccess: () => toast.success('Đã gửi lại mã xác minh'),
+                          onSuccess: () =>
+                            toast.success('Verification code resent'),
                           onError: (err: any) =>
-                            toast.error(err?.response?.data?.error || 'Gửi mã thất bại')
+                            toast.error(
+                              err?.response?.data?.error ||
+                                'Failed to send code'
+                            )
                         })
                       }}
                       className="text-blue-600 hover:underline"
                     >
-                      Gửi lại mã
+                      Resend Code
                     </button>
                     {resendVerifyMutation.isPending && (
-                      <span className="text-xs text-gray-500">Đang gửi...</span>
+                      <span className="text-xs text-gray-500">Sending...</span>
                     )}
                   </div>
                 </>
@@ -516,7 +528,7 @@ const Login = ({
                       type="text"
                       value={resetCode}
                       onChange={e => setResetCode(e.target.value)}
-                      placeholder="Mã reset đã gửi email"
+                      placeholder="Reset code sent to email"
                       className="w-full rounded-lg border border-gray-300 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </label>
@@ -525,7 +537,7 @@ const Login = ({
                       type="password"
                       value={newPassword}
                       onChange={e => setNewPassword(e.target.value)}
-                      placeholder="Mật khẩu mới (>=6)"
+                      placeholder="New password (>=6)"
                       className="w-full rounded-lg border border-gray-300 px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       minLength={6}
                     />
@@ -534,18 +546,21 @@ const Login = ({
                     type="button"
                     onClick={() => {
                       if (!resetEmail) {
-                        toast.error('Nhập email trước')
+                        toast.error('Enter email first')
                         return
                       }
                       forgotMutation.mutate(resetEmail, {
-                        onSuccess: () => toast.success('Đã gửi mã đặt lại mật khẩu'),
+                        onSuccess: () =>
+                          toast.success('Password reset code sent'),
                         onError: (err: any) =>
-                          toast.error(err?.response?.data?.error || 'Gửi mã thất bại')
+                          toast.error(
+                            err?.response?.data?.error || 'Failed to send code'
+                          )
                       })
                     }}
                     className="text-blue-600 hover:underline text-sm"
                   >
-                    Gửi mã đặt lại mật khẩu
+                    Send Password Reset Code
                   </button>
                 </>
               )}
@@ -553,15 +568,7 @@ const Login = ({
               {/* Remember + Forgot */}
               {mode === 'login' && (
                 <div className="flex items-center justify-between text-sm">
-                  <label className="inline-flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={remember}
-                      onChange={e => setRemember(e.target.checked)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-gray-600">Keep me logged in</span>
-                  </label>
+                  <label className="inline-flex items-center gap-2"></label>
                   <button
                     type="button"
                     onClick={() => {
@@ -570,7 +577,7 @@ const Login = ({
                     }}
                     className="text-blue-600 hover:underline"
                   >
-                    Forgot Password ?
+                    Forgot Password?
                   </button>
                 </div>
               )}
@@ -599,10 +606,10 @@ const Login = ({
                   mode === 'login'
                     ? loginMutation.isPending
                     : mode === 'register'
-                      ? registerMutation.isPending
-                      : mode === 'verify'
-                        ? verifyMutation.isPending
-                        : resetMutation.isPending
+                    ? registerMutation.isPending
+                    : mode === 'verify'
+                    ? verifyMutation.isPending
+                    : resetMutation.isPending
                 }
                 className="w-full bg-blue-600 text-white rounded-lg py-3 text-sm font-light hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
@@ -615,10 +622,10 @@ const Login = ({
                 {mode === 'login'
                   ? 'Log in'
                   : mode === 'register'
-                    ? 'Create Account'
-                    : mode === 'verify'
-                      ? 'Verify Email'
-                      : 'Reset Password'}
+                  ? 'Create Account'
+                  : mode === 'verify'
+                  ? 'Verify Email'
+                  : 'Reset Password'}
               </button>
 
               {/* Footer */}

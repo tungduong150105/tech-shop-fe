@@ -6,13 +6,12 @@ import StockIcon from '../../../assets/stock-icon.svg'
 import GuaranteeIcon from '../../../assets/guarantee-icon.svg'
 // @ts-ignore
 import DeliveryIcon from '../../../assets/delivery-icon.svg'
-
+import { Star } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import Payment from './Payment'
 import TechnicalDetail from './TechnicalDetail'
-import SimilarProduct from './ProductList'
 
-import type { ProductRes, Product } from '../../types/product'
+import type { Product } from '../../types/product'
 import { useSimilarProducts } from '../../hooks/useProducts'
 import ListProduct from './ListProduct'
 import ReviewComponent from './Review'
@@ -22,7 +21,7 @@ interface ProductDetailProps {
 }
 
 const ProductDetail = ({ product }: ProductDetailProps) => {
-  const [selectedInfo, setSelectedInfo] = useState('technical')
+  const [selectedInfo, setSelectedInfo] = useState('description')
   const [mainImage, setMainImage] = useState(
     'https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'
   )
@@ -30,7 +29,7 @@ const ProductDetail = ({ product }: ProductDetailProps) => {
   const [expanded, setExpanded] = useState(false)
   const visibleCount = expanded ? product.specs.length : 5
 
-  const { data: similarProducts } = useSimilarProducts(Number(product.category_id))
+  const { data: similarProducts } = useSimilarProducts(Number(product.id), 6)
 
   const colors =
     (product.available_colors && product.available_colors.length > 0
@@ -97,10 +96,12 @@ const ProductDetail = ({ product }: ProductDetailProps) => {
                   {product.name}
                 </h1>
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg">
-                    <img src={StarIcon} alt="star" className="w-4 h-4" />
-                    <span className="font-semibold">
-                      {product.rating ? parseFloat(product.rating).toFixed(1) : '0.0'}
+                  <div className="flex items-center gap-2 text-blue-700 px-3 py-1.5 rounded-lg">
+                    <Star className="w-4 h-4 fill-blue-600 text-blue-600" />
+                    <span className="font-semibold text-black">
+                      {product.rating
+                        ? parseFloat(String(product.rating)).toFixed(1)
+                        : '0.0'}
                     </span>
                   </div>
                   <div className="text-gray-600">
@@ -109,15 +110,17 @@ const ProductDetail = ({ product }: ProductDetailProps) => {
                 </div>
               </div>
 
-            {/* Color Selection */}
-            {colors && colors.length > 0 && (
+              {/* Color Selection */}
+              {colors && colors.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Color</h3>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                    Color
+                  </h3>
                   <div className="flex gap-3">
-                  {colors.map(c => (
+                    {colors.map(c => (
                       <button
                         key={c.name}
-                      onClick={() => setSelectedColor(c.name)}
+                        onClick={() => setSelectedColor(c.name)}
                         className={`w-10 h-10 rounded-full border-2 transition-all ${
                           c.name === selectedColor
                             ? 'border-blue-600 ring-2 ring-blue-200 scale-110'
@@ -131,48 +134,22 @@ const ProductDetail = ({ product }: ProductDetailProps) => {
                 </div>
               )}
 
-              {/* Features */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 py-4 border-y border-gray-200">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                    <img src={StockIcon} alt="stock" className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Stock Status</p>
-                    <p className={`text-sm font-semibold ${product.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {product.quantity > 0 ? 'In Stock' : 'Out of Stock'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <img src={GuaranteeIcon} alt="guarantee" className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Warranty</p>
-                    <p className="text-sm font-semibold text-gray-900">1 Year</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <img src={DeliveryIcon} alt="delivery" className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Delivery</p>
-                    <p className="text-sm font-semibold text-gray-900">Fast & Free</p>
-                  </div>
-                </div>
-              </div>
-
               {/* Specifications */}
               {product.specs && product.specs.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Key Specifications</h3>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                    Key Specifications
+                  </h3>
                   <dl className="space-y-2">
                     {product.specs.slice(0, visibleCount).map(s => (
-                      <div key={s.label} className="flex justify-between py-2 border-b border-gray-100">
+                      <div
+                        key={s.label}
+                        className="flex justify-between py-2 border-b border-gray-100"
+                      >
                         <dt className="text-sm text-gray-600">{s.label}</dt>
-                        <dd className="text-sm font-medium text-gray-900">{s.value}</dd>
+                        <dd className="text-sm font-medium text-gray-900">
+                          {s.value}
+                        </dd>
                       </div>
                     ))}
                   </dl>
@@ -181,7 +158,9 @@ const ProductDetail = ({ product }: ProductDetailProps) => {
                       className="mt-3 text-blue-600 hover:text-blue-700 text-sm font-medium"
                       onClick={() => setExpanded(!expanded)}
                     >
-                      {expanded ? 'Show Less' : `Show All ${product.specs.length} Specifications`}
+                      {expanded
+                        ? 'Show Less'
+                        : `Show All ${product.specs.length} Specifications`}
                     </button>
                   )}
                 </div>
@@ -206,6 +185,16 @@ const ProductDetail = ({ product }: ProductDetailProps) => {
         <div className="mt-12">
           <nav className="border-b border-gray-200">
             <div className="flex space-x-8">
+              <button
+                onClick={() => setSelectedInfo('description')}
+                className={`pb-4 px-1 text-base font-medium transition-colors ${
+                  selectedInfo === 'description'
+                    ? 'border-b-2 border-blue-600 text-blue-600'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Description
+              </button>
               <button
                 onClick={() => setSelectedInfo('technical')}
                 className={`pb-4 px-1 text-base font-medium transition-colors ${
@@ -239,6 +228,19 @@ const ProductDetail = ({ product }: ProductDetailProps) => {
             </div>
           </nav>
           <div className="mt-8">
+            {selectedInfo === 'description' && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Product Description
+                </h3>
+                <div className="prose prose-gray max-w-none">
+                  <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                    {product.description ||
+                      'No description available for this product.'}
+                  </p>
+                </div>
+              </div>
+            )}
             {selectedInfo === 'technical' && (
               <TechnicalDetail specs={product.specs_detail} />
             )}

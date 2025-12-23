@@ -16,7 +16,15 @@ export type AdminCoupon = {
   updated_at?: string
 }
 
-export type CouponListResponse = AdminCoupon[]
+export type CouponListResponse = {
+  coupons: AdminCoupon[]
+  pagination: {
+    current_page: number
+    per_page: number
+    total_count: number
+    total_pages: number
+  }
+}
 
 export type CouponResponse = AdminCoupon
 

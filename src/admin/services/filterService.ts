@@ -10,15 +10,28 @@ import {
 export const adminFilterService = {
   // Public endpoint
   get(category_id?: number) {
-    return axiosClient.get<{ success: boolean; data: FilterMetadataResponse }>('/filter', {
-      params: { category_id }
-    })
+    return axiosClient.get<{ success: boolean; data: FilterMetadataResponse }>(
+      '/filter',
+      {
+        params: { category_id }
+      }
+    )
   },
   // Admin CRUD
-  list(params?: { category_id?: number; key?: string; is_active?: boolean }) {
-    return axiosClient.get<FilterOptionListResponseWithSuccess>('/filter/admin', {
-      params
-    })
+  list(params?: {
+    category_id?: number
+    key?: string
+    is_active?: boolean
+    page?: number
+    limit?: number
+    q?: string
+  }) {
+    return axiosClient.get<FilterOptionListResponseWithSuccess>(
+      '/filter/admin',
+      {
+        params
+      }
+    )
   },
   getById(id: number) {
     return axiosClient.get<FilterOptionResponse>(`/filter/admin/${id}`)
@@ -30,12 +43,18 @@ export const adminFilterService = {
     return axiosClient.put<FilterOptionResponse>(`/filter/admin/${id}`, payload)
   },
   delete(id: number) {
-    return axiosClient.delete<{ success: boolean; message: string }>(`/filter/admin/${id}`)
+    return axiosClient.delete<{ success: boolean; message: string }>(
+      `/filter/admin/${id}`
+    )
   },
   sync(category_id?: number) {
-    return axiosClient.post<{ success: boolean; message: string; data: any }>('/filter/sync', null, {
-      params: category_id ? { category_id } : undefined
-    })
+    return axiosClient.post<{ success: boolean; message: string; data: any }>(
+      '/filter/sync',
+      null,
+      {
+        params: category_id ? { category_id } : undefined
+      }
+    )
   }
 }
 
